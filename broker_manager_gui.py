@@ -4,8 +4,11 @@ import pyautogui
 import pyperclip
 import pytz
 import time
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 import broker_manager_gui_luzin_config as config
+
+TRY_COUNT = 3
 
 currentMouseX, currentMouseY = pyautogui.position()  # Получаем XY координаты курсора
 print(currentMouseX, currentMouseY)
@@ -46,6 +49,10 @@ OPTION_TABLE['GBPUSD'] = OPTION_TABLE['EURUSD']
 PROGNOSIS_LIST = ('вверх', 'вниз')
 PROGNOSIS_TABLE = dict(zip(PROGNOSIS_LIST, [config.PROGNOSIS_UP_XY, config.PROGNOSIS_DOWN_XY]))
 
+
+shed = BlockingScheduler()
+
+
 def __activate_broker_window():
     name = 'Прозрачный брокер бинарных опционов'
     broker_window_list = gw.getWindowsWithTitle(name)
@@ -53,27 +60,12 @@ def __activate_broker_window():
         raise RuntimeError('Window "{}" is not found'.format(name))
     broker_window = broker_window_list[0]
     broker_window.activate()
-    
-
-def __wait_for_time(time_to_wait):
-    msk_tz = pytz.timezone('Europe/Moscow')
-    now_hour = datetime.datetime.now(msk_tz).hour
-    while now_hour != time_to_wait.hour:
-        time.sleep(5)
-        now_hour = datetime.datetime.now(msk_tz).hour
-
-    now_minute = datetime.datetime.now(msk_tz).minute
-    while now_minute < time_to_wait.minute:
-        time.sleep(5)
-        now_minute = datetime.datetime.now(msk_tz).minute
 
 
-def get_deal_result(deal_time):  # возвращает результат сделки
+def get_deal_result(result_handler):  # возвращает результат сделки
     result = ''
-    __wait_for_time(deal_time)
-
     __activate_broker_window()
-    for k in range(50):
+    for k in range(TRY_COUNT):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
         pyautogui.doubleClick(config.WIN_LOSE_XY[0], config.WIN_LOSE_XY[1])
         pyautogui.hotkey('ctrl', 'c')
@@ -82,17 +74,43 @@ def get_deal_result(deal_time):  # возвращает результат сд�
         if result in ['LOSE', 'WIN']:
             break
         time.sleep(5)
-    return result
+
+    if result not in ['LOSE', 'WIN']:
+        raise ValueError('Incorrect result of deal: {}'.format(result))
+    result_handler(result)
 
 
-def make_deal(option, prognosis, summ, deal_time):
-    __activate_broker_window()
-    pyautogui.click(OPTION_TABLE[option][0], OPTION_TABLE[option][1], duration=0.1)
-    time.sleep(2)
+def __get_summ():
+    pyperclip.copy("")
+    pyautogui.doubleClick(config.INVESTMENT_MONEY[0], config.INVESTMENT_MONEY[1], duration=0.1)
+    pyautogui.hotkey('ctrl', 'c')
+    time.sleep(1)
+    return pyperclip.paste()
+
+
+def __set_summ(summ):
     pyautogui.doubleClick(config.INVESTMENT_MONEY[0], config.INVESTMENT_MONEY[1], duration=0.1)
     time.sleep(2)
     pyautogui.write(str(summ), interval=0.25)
+
+
+def make_deal(option, prognosis, summ, deal_time, result_handler):
+    __activate_broker_window()
+    pyautogui.click(OPTION_TABLE[option][0], OPTION_TABLE[option][1], duration=0.1)
     time.sleep(2)
+
+    c_summ = 0
+    for k in range(TRY_COUNT):
+        __set_summ(summ)
+        time.sleep(2)
+        c_summ = __get_summ()
+        time.sleep(2)
+        if c_summ == summ:
+            break
+
+    if c_summ != summ:
+        raise RuntimeError('Can not set up summ for deal')
+
     pyautogui.click(config.EXPIRATION_TIME[0], config.EXPIRATION_TIME[1], duration=0.1)
     time.sleep(2)
     pyautogui.click(EXPIRATION_HOUR[deal_time.hour][0], EXPIRATION_HOUR[deal_time.hour][1], duration=0.1)
@@ -100,3 +118,17 @@ def make_deal(option, prognosis, summ, deal_time):
     pyautogui.click(EXPIRATION_MINUTE[deal_time.minute // 5][0], EXPIRATION_MINUTE[deal_time.minute // 5][1], duration=0.1)
     time.sleep(2)
     pyautogui.click(PROGNOSIS_TABLE[prognosis][0], PROGNOSIS_TABLE[prognosis][1], duration=0.1)
+
+    # Set up timer on finish job
+    now_date = datetime.datetime.now()
+    msk_tz = pytz.timezone('Europe/Moscow')
+    finish_datetime = datetime.datetime(
+        now_date.year,
+        now_date.month,
+        now_date.day,
+        deal_time.hour,
+        deal_time.minute,
+        tzinfo=msk_tz
+    )
+    shed.add_job(get_deal_result, 'date', run_date=finish_datetime, args=[result_handler])
+    shed.start()

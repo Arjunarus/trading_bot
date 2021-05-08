@@ -13,6 +13,7 @@ SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 
 # Initial values
 step = 1
 init_summ = 50
+is_deal = False
 
 # Prepare logger
 logger = logging.getLogger('pyFinance')
@@ -48,39 +49,52 @@ def parse_signal(signal_text):
     return option, prognosis, deal_time
 
 
+def deal_result_process(result):
+    global step
+    global is_deal
+
+    logger.info('Got result: %s', result)
+    if result == 'LOSE':
+        step += 1
+    elif result == 'WIN':
+        step = 1
+    else:
+        raise ValueError('Unknown result: {}'.format(result))
+
+    logger.info('\n')
+    is_deal = False
+
+
 def message_process(user_mess, mess_date):
     global step
+    global is_deal
+
     logger.info('Got message: %s', user_mess)
     logger.info(mess_date.strftime('Message date: %d-%m-%Y %H:%M'))
+    if is_deal:
+        logger.info('Deal is active now, skip message.')
+        return
 
     try:
         signal = parse_signal(user_mess)
         if signal is None:
-            logger.info('Message is not a signal.')
+            logger.info('Message is not a signal, skip.')
             return
 
         option, prognosis, deal_time = signal
 
-        logger.info(
-            'Получен сигнал: {opt} {prog} до {tm}'.format(
+        logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
             opt=option,
             prog=prognosis,
-            tm=deal_time.strftime('%H.%M'))
-        )
+            tm=deal_time.strftime('%H.%M')
+        ))
 
         summ = get_summ(step)
         logger.info('Сумма: {}'.format(summ))
 
-        broker_manager.make_deal(option, prognosis, summ, deal_time)
-        result = broker_manager.get_deal_result(deal_time)
-        if result == 'LOSE':
-            step += 1
-        elif result == 'WIN':
-            step = 1
-        else:
-            raise ValueError('Unknown result: {}'.format(result))
+        broker_manager.make_deal(option, prognosis, summ, deal_time, deal_result_process)
+        is_deal = True
 
-        logger.info('result = {}\n'.format(result))
     except Exception as err:
         logger.error("Ошибка: {}\n".format(err))
         traceback.print_exc(file=sys.stdout)
@@ -113,7 +127,7 @@ def load_state(save_file_path):
 
 
 def main():
-    # Вставляем api_id и api_hash
+    # Proper number, api_id and api_hash from command line
     number, api_id, api_hash = sys.argv[1:]
     client = TelegramClient(number, api_id, api_hash)
 
