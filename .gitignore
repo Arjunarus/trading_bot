@@ -1,0 +1,5 @@
+.idea/**
+venv
+**/__pycache__
+Read me.txt
+starter.cmd
