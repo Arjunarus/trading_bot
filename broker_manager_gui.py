@@ -130,5 +130,8 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
         deal_time.minute,
         tzinfo=msk_tz
     )
+    if deal_time.hour in [0, 1]:
+        finish_datetime += datetime.timedelta(days=1)
+
     shed.add_job(get_deal_result, 'date', run_date=finish_datetime, args=[result_handler])
     shed.start()
