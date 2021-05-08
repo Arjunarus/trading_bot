@@ -4,7 +4,7 @@ import pyautogui
 import pyperclip
 import pytz
 import time
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 import broker_manager_gui_luzin_config as config
 
@@ -50,7 +50,7 @@ PROGNOSIS_LIST = ('вверх', 'вниз')
 PROGNOSIS_TABLE = dict(zip(PROGNOSIS_LIST, [config.PROGNOSIS_UP_XY, config.PROGNOSIS_DOWN_XY]))
 
 
-shed = BlockingScheduler()
+shed = BackgroundScheduler()
 
 
 def __activate_broker_window():
@@ -63,6 +63,7 @@ def __activate_broker_window():
 
 
 def get_deal_result(result_handler):  # возвращает результат сделки
+    shed.shutdown()
     result = ''
     __activate_broker_window()
     for k in range(TRY_COUNT):
