@@ -65,7 +65,6 @@ def deal_result_process(result):
     else:
         raise ValueError('Unknown result: {}'.format(result))
 
-    logger.info('\n')
     is_deal = False
 
 
@@ -73,7 +72,7 @@ def message_process(user_mess, mess_date):
     global step
     global is_deal
 
-    logger.info('Got message: %s', user_mess)
+    logger.info('\nGot message: %s', user_mess)
     logger.info(mess_date.strftime('Message date: %d-%m-%Y %H:%M'))
     if is_deal:
         logger.info('Deal is active now, skip message.')
