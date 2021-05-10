@@ -38,6 +38,10 @@ def parse_signal(signal_text):
         return None
 
     option = signal_lines[0][:6]
+    if option not in broker_manager.OPTION_LIST:
+        logger.info('Unknown option: {}. Skip.'.format(option))
+        return None
+    
     pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
     m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
     if m is None:
