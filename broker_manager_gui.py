@@ -1,6 +1,12 @@
 import datetime
 import platform
-import pygetwindow as gw
+if platform.system() == 'Windows':
+    import pygetwindow as gw
+else:
+    class gw:
+        def getWindowsWithTitle(self, _):
+            return []
+
 import pyautogui
 import pyperclip
 import pytz
