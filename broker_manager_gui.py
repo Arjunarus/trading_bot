@@ -1,4 +1,5 @@
 import datetime
+import platform
 import pygetwindow as gw
 import pyautogui
 import pyperclip
@@ -54,6 +55,10 @@ shed = BackgroundScheduler()
 
 
 def __activate_broker_window():
+    if platform.system() != 'Windows':
+        # Does not work on linux
+        return
+
     name = 'Прозрачный брокер бинарных опционов'
     broker_window_list = gw.getWindowsWithTitle(name)
     if len(broker_window_list) == 0:
