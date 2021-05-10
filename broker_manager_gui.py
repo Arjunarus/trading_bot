@@ -97,7 +97,7 @@ def __get_summ():
     pyautogui.doubleClick(config.INVESTMENT_MONEY[0], config.INVESTMENT_MONEY[1], duration=0.1)
     pyautogui.hotkey('ctrl', 'c')
     time.sleep(1)
-    return pyperclip.paste()
+    return int(pyperclip.paste())
 
 
 def __set_summ(summ):
