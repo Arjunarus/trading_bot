@@ -93,11 +93,16 @@ def get_deal_result(result_handler):  # возвращает результат 
 
 
 def __get_summ():
+    # Does not work
     pyperclip.copy("")
     pyautogui.doubleClick(config.INVESTMENT_MONEY[0], config.INVESTMENT_MONEY[1], duration=0.1)
     pyautogui.hotkey('ctrl', 'c')
     time.sleep(1)
-    return int(pyperclip.paste())
+    try:
+        res = int(pyperclip.paste())
+    except:
+        res = None
+    return res
 
 
 def __set_summ(summ):
@@ -115,13 +120,13 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
     for k in range(TRY_COUNT):
         __set_summ(summ)
         time.sleep(2)
-        c_summ = __get_summ()
-        time.sleep(2)
-        if c_summ == summ:
-            break
+        # c_summ = __get_summ()
+        # time.sleep(2)
+        # if c_summ == summ:
+            # break
 
-    if c_summ != summ:
-        raise RuntimeError('Can not set up summ for deal')
+    # if c_summ != summ:
+        # raise RuntimeError('Can not set up summ for deal, c_summ={}'.format(c_summ))
 
     pyautogui.click(config.EXPIRATION_TIME[0], config.EXPIRATION_TIME[1], duration=0.1)
     time.sleep(2)
