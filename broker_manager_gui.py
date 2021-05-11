@@ -13,7 +13,7 @@ import pytz
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
-import broker_manager_gui_luzin_config as config
+import broker_manager_gui_nick_config as config
 
 TRY_COUNT = 3
 
@@ -107,7 +107,7 @@ def __get_summ():
 
 def __set_summ(summ):
     pyautogui.doubleClick(config.INVESTMENT_MONEY[0], config.INVESTMENT_MONEY[1], duration=0.1)
-    time.sleep(2)
+    time.sleep(1)
     pyautogui.write(str(summ), interval=0.25)
 
 
@@ -119,7 +119,7 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
     c_summ = 0
     for k in range(TRY_COUNT):
         __set_summ(summ)
-        time.sleep(2)
+        time.sleep(1)
         # c_summ = __get_summ()
         # time.sleep(2)
         # if c_summ == summ:
