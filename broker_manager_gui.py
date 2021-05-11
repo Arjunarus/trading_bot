@@ -58,6 +58,7 @@ PROGNOSIS_TABLE = dict(zip(PROGNOSIS_LIST, [config.PROGNOSIS_UP_XY, config.PROGN
 
 
 shed = BackgroundScheduler()
+shed.start()
 
 
 def __activate_broker_window():
@@ -74,7 +75,6 @@ def __activate_broker_window():
 
 
 def get_deal_result(result_handler):  # возвращает результат сделки
-    shed.shutdown()
     result = ''
     __activate_broker_window()
     for k in range(TRY_COUNT):
@@ -151,4 +151,3 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
         finish_datetime += datetime.timedelta(days=1)
 
     shed.add_job(get_deal_result, 'date', run_date=finish_datetime, args=[result_handler])
-    shed.start()
