@@ -26,6 +26,14 @@ ch.setLevel(logging.INFO)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+# Prepare telethon logger
+telethon_logger = logging.getLogger('telethon')
+tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
+formatter = logging.Formatter('%(asctime)s %(message)s')
+tfh.setFormatter(formatter)
+telethon_logger.setLevel(logging.DEBUG)
+telethon_logger.addHandler(tfh)
+
 
 def get_summ(st):
     return int(init_summ * (2.2 ** (st - 1)))
