@@ -1,4 +1,5 @@
 import datetime
+import logging
 import platform
 if platform.system() == 'Windows':
     import pygetwindow as gw
@@ -13,8 +14,10 @@ import pytz
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
-import broker_manager_gui_nick_config as config
+import broker_manager_gui_luzin_config as config
 
+
+logger = logging.getLogger('pyFinance')
 TRY_COUNT = 3
 
 currentMouseX, currentMouseY = pyautogui.position()  # Получаем XY координаты курсора
@@ -137,17 +140,21 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
     pyautogui.click(PROGNOSIS_TABLE[prognosis][0], PROGNOSIS_TABLE[prognosis][1], duration=0.1)
 
     # Set up timer on finish job
-    now_date = datetime.datetime.now()
     msk_tz = pytz.timezone('Europe/Moscow')
-    finish_datetime = datetime.datetime(
-        now_date.year,
-        now_date.month,
-        now_date.day,
-        deal_time.hour,
-        deal_time.minute,
-        tzinfo=msk_tz
+    now_date = datetime.datetime.now(msk_tz)
+    finish_datetime = msk_tz.localize(
+        datetime.datetime(
+            now_date.year,
+            now_date.month,
+            now_date.day,
+            deal_time.hour,
+            deal_time.minute
+        )
     )
     if deal_time.hour in [0, 1]:
         finish_datetime += datetime.timedelta(days=1)
+    finish_datetime = finish_datetime.astimezone()
+    
+    logger.debug("finish_datetime={}".format(finish_datetime))
 
     shed.add_job(get_deal_result, 'date', run_date=finish_datetime, args=[result_handler])
