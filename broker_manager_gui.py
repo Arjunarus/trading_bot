@@ -13,7 +13,7 @@ import pytz
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
-import broker_manager_gui_nick_config as config
+import broker_manager_gui_luzin_config as config
 
 TRY_COUNT = 3
 
