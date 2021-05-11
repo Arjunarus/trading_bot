@@ -14,14 +14,11 @@ import pytz
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
-import broker_manager_gui_luzin_config as config
+import broker_manager_gui_nick_config as config
 
 
 logger = logging.getLogger('pyFinance')
 TRY_COUNT = 3
-
-currentMouseX, currentMouseY = pyautogui.position()  # Получаем XY координаты курсора
-print(currentMouseX, currentMouseY)
 
 EXPIRATION_HOUR = [
     (config.EXP_HOUR_FIRST_X + config.TIME_BUTTON_DELTA_X * i, config.EXP_HOUR_FIRST_Y + config.TIME_BUTTON_DELTA_Y * j)
