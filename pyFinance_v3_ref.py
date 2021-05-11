@@ -29,7 +29,7 @@ logger.addHandler(ch)
 # Prepare telethon logger
 telethon_logger = logging.getLogger('telethon')
 tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
-formatter = logging.Formatter('%(asctime)s %(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 tfh.setFormatter(formatter)
 telethon_logger.setLevel(logging.DEBUG)
 telethon_logger.addHandler(tfh)
