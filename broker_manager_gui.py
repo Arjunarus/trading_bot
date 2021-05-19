@@ -87,8 +87,7 @@ def get_deal_result(result_handler):  # возвращает результат 
             break
         time.sleep(5)
 
-    if result not in ['LOSE', 'WIN']:
-        raise ValueError('Incorrect result of deal: {}'.format(result))
+    # If result not in ['LOSE', 'WIN'] return as is
     result_handler(result)
 
 
@@ -116,17 +115,9 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
     pyautogui.click(OPTION_TABLE[option][0], OPTION_TABLE[option][1], duration=0.1)
     time.sleep(2)
 
-    c_summ = 0
     for k in range(TRY_COUNT):
         __set_summ(summ)
         time.sleep(1)
-        # c_summ = __get_summ()
-        # time.sleep(2)
-        # if c_summ == summ:
-            # break
-
-    # if c_summ != summ:
-        # raise RuntimeError('Can not set up summ for deal, c_summ={}'.format(c_summ))
 
     pyautogui.click(config.EXPIRATION_TIME[0], config.EXPIRATION_TIME[1], duration=0.1)
     time.sleep(2)

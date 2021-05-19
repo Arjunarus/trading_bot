@@ -18,12 +18,15 @@ is_deal = False
 # Prepare logger
 logger = logging.getLogger('pyFinance')
 logger.setLevel(logging.DEBUG)
+
 fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'))
 formatter = logging.Formatter('%(asctime)s %(message)s')
 fh.setFormatter(formatter)
+fh.setLevel(logging.DEBUG)
+logger.addHandler(fh)
+
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-logger.addHandler(fh)
 logger.addHandler(ch)
 
 # Prepare telethon logger
@@ -33,6 +36,32 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 tfh.setFormatter(formatter)
 telethon_logger.setLevel(logging.DEBUG)
 telethon_logger.addHandler(tfh)
+
+
+def save_state(save_file_path):
+    global step
+    global init_summ
+    with open(save_file_path, 'w') as sav:
+        sav.write("{} {}".format(step, init_summ))
+
+    logger.debug("Saved to {}".format(save_file_path))
+
+
+def load_state(save_file_path):
+    global step
+    global init_summ
+
+    if not os.path.isfile(save_file_path):
+        logger.error("Save state {} is not exists".format(save_file_path))
+        return
+
+    with open(save_file_path, 'r') as sav:
+        content = sav.read()
+    step, init_summ = map(int, content.split())
+
+    logger.debug("Loaded from {}".format(save_file_path))
+    logger.debug('step = {}'.format(step))
+    logger.debug('init_summ = {}'.format(init_summ))
 
 
 def get_summ(st):
@@ -71,16 +100,17 @@ def deal_result_process(result):
     elif result == 'WIN':
         step = 1
     else:
-        raise ValueError('Unknown result: {}'.format(result))
+        logger.error('Unknown result: {}'.format(result))
 
     is_deal = False
+    save_state(SAVE_STATE_FILE_PATH)
 
 
 def message_process(user_mess, mess_date):
     global step
     global is_deal
 
-    logger.info('\nGot message: %s', user_mess)
+    logger.debug('\nGot message: %s', user_mess)
     logger.info(mess_date.strftime('Message date: %d-%m-%Y %H:%M'))
     if is_deal:
         logger.info('Deal is active now, skip message.')
@@ -111,32 +141,6 @@ def message_process(user_mess, mess_date):
         traceback.print_exc(file=sys.stdout)
 
 
-def save_state(save_file_path):
-    global step
-    global init_summ
-    with open(save_file_path, 'w') as sav:
-        sav.write("{} {}".format(step, init_summ))
-
-    logger.debug("Saved to {}".format(save_file_path))
-
-
-def load_state(save_file_path):
-    global step
-    global init_summ
-
-    if not os.path.isfile(save_file_path):
-        logger.error("Save state {} is not exists".format(save_file_path))
-        return
-
-    with open(save_file_path, 'r') as sav:
-        content = sav.read()
-    step, init_summ = map(int, content.split())
-
-    logger.debug("Loaded from {}".format(save_file_path))
-    logger.debug('step = {}'.format(step))
-    logger.debug('init_summ = {}'.format(init_summ))
-
-
 def main():
     # Proper number, api_id and api_hash from command line
     number, api_id, api_hash = sys.argv[1:]
@@ -154,7 +158,6 @@ def main():
         client.run_until_disconnected()
     except:
         pass
-    save_state(SAVE_STATE_FILE_PATH)
 
 
 if __name__ == '__main__':
