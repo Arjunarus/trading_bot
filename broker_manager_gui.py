@@ -4,6 +4,7 @@ import platform
 if platform.system() == 'Windows':
     import pygetwindow as gw
 else:
+    # Workaround for linux system where pygetwindow does not work
     class gw:
         def getWindowsWithTitle(self, _):
             return []
@@ -20,38 +21,49 @@ import broker_manager_gui_nick_config as config
 logger = logging.getLogger('pyFinance')
 TRY_COUNT = 3
 
-EXPIRATION_HOUR = [
-    (config.EXP_HOUR_FIRST_X + config.TIME_BUTTON_DELTA_X * i, config.EXP_HOUR_FIRST_Y + config.TIME_BUTTON_DELTA_Y * j)
-    for j in range(4) for i in range(6)
-]
 
-EXPIRATION_MINUTE = [
-    (config.EXP_MINUTE_FIRST_X + config.TIME_BUTTON_DELTA_X * i, config.EXP_MINUTE_FIRST_Y + config.TIME_BUTTON_DELTA_Y * j)
-    for j in range(4) for i in range(3)
-]
+class Vector2D:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
-OPTION_LIST = (
-    'AUDCAD', 'AUDCHF',
-    'AUDJPY', 'AUDNZD',
-    'AUDUSD', 'CADJPY',
-    'EURAUD', 'EURCAD',
-    'EURCHF', 'EURGBP',
-    'EURJPY', 'EURUSD',
-    'GBPAUD', 'GBPCHF',
-    'GBPJPY', 'GBPNZD',
-    'NZDJPY', 'NZDUSD',
-    'USDCAD', 'USDCHF',
-    'USDJPY', 'GBPUSD'
+
+def __get_matrix(m_size, start, delta):
+    if type(m_size) is not Vector2D:
+        raise ValueError('m_size is not a 2d vector.')
+    if type(start) is not Vector2D:
+        raise ValueError('start is not a 2d vector.')
+    if type(delta) is not Vector2D:
+        raise ValueError('delta is not a 2d vector.')
+
+    return [Vector2D(start.x + delta.x * i, start.y + delta.y * j) for j in range(m_size.x) for i in range(m_size.y)]
+
+
+EXP_HOUR_BUTTONS = __get_matrix(
+    m_size=Vector2D(6, 4),
+    start=Vector2D(config.EXP_HOUR_FIRST_X, config.EXP_HOUR_FIRST_Y),
+    delta=Vector2D(config.TIME_BUTTON_DELTA_X, config.TIME_BUTTON_DELTA_Y)
 )
 
-OPTION_TABLE = dict(zip(
+EXP_MINUTE_BUTTONS = __get_matrix(
+    m_size=Vector2D(3, 4),
+    start=Vector2D(config.EXP_MINUTE_FIRST_X, config.EXP_MINUTE_FIRST_Y),
+    delta=Vector2D(config.TIME_BUTTON_DELTA_X, config.TIME_BUTTON_DELTA_Y)
+)
+
+OPTION_LIST = (
+    'AUDCAD', 'AUDJPY', 'AUDUSD', 'EURAUD', 'EURCHF', 'EURJPY', 'GBPAUD', 'GBPJPY', 'NZDJPY', 'USDCAD', 'USDJPY'
+    'AUDCHF', 'AUDNZD', 'CADJPY', 'EURCAD', 'EURGBP', 'EURUSD', 'GBPCHF', 'GBPNZD', 'NZDUSD', 'USDCHF'
+)
+
+OPTION_BUTTONS = dict(zip(
     OPTION_LIST,
-    [
-        (config.OPTION_FIRST_X + config.OPTION_DELTA_X * i, config.OPTION_FIRST_Y + config.OPTION_DELTA_Y * j)
-        for i in range(11) for j in range(2)
-    ]
+    __get_matrix(
+        m_size=Vector2D(11, 2),
+        start=Vector2D(config.OPTION_FIRST_X, config.OPTION_FIRST_Y),
+        delta=Vector2D(config.OPTION_DELTA_X, config.OPTION_DELTA_Y)
+    )
 ))
-OPTION_TABLE['GBPUSD'] = OPTION_TABLE['EURUSD']
 
 PROGNOSIS_LIST = ('вверх', 'вниз')
 PROGNOSIS_TABLE = dict(zip(PROGNOSIS_LIST, [config.PROGNOSIS_UP_XY, config.PROGNOSIS_DOWN_XY]))
@@ -99,7 +111,7 @@ def __get_summ():
     time.sleep(1)
     try:
         res = int(pyperclip.paste())
-    except:
+    except Exception:
         res = None
     return res
 
@@ -112,7 +124,7 @@ def __set_summ(summ):
 
 def make_deal(option, prognosis, summ, deal_time, result_handler):
     __activate_broker_window()
-    pyautogui.click(OPTION_TABLE[option][0], OPTION_TABLE[option][1], duration=0.1)
+    pyautogui.click(OPTION_BUTTONS[option].x, OPTION_BUTTONS[option].y, duration=0.1)
     time.sleep(2)
 
     for k in range(TRY_COUNT):
@@ -121,9 +133,9 @@ def make_deal(option, prognosis, summ, deal_time, result_handler):
 
     pyautogui.click(config.EXPIRATION_TIME[0], config.EXPIRATION_TIME[1], duration=0.1)
     time.sleep(2)
-    pyautogui.click(EXPIRATION_HOUR[deal_time.hour][0], EXPIRATION_HOUR[deal_time.hour][1], duration=0.1)
+    pyautogui.click(EXP_HOUR_BUTTONS[deal_time.hour].x, EXP_HOUR_BUTTONS[deal_time.hour].y, duration=0.1)
     time.sleep(2)
-    pyautogui.click(EXPIRATION_MINUTE[deal_time.minute // 5][0], EXPIRATION_MINUTE[deal_time.minute // 5][1], duration=0.1)
+    pyautogui.click(EXP_MINUTE_BUTTONS[deal_time.minute // 5].x, EXP_MINUTE_BUTTONS[deal_time.minute // 5].y, duration=0.1)
     time.sleep(2)
     pyautogui.click(PROGNOSIS_TABLE[prognosis][0], PROGNOSIS_TABLE[prognosis][1], duration=0.1)
 
