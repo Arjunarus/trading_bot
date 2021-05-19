@@ -1,20 +1,12 @@
 import datetime
 import logging
-import platform
-if platform.system() == 'Windows':
-    import pygetwindow as gw
-else:
-    # Workaround for linux system where pygetwindow does not work
-    class gw:
-        def getWindowsWithTitle(self, _):
-            return []
-
 import pyautogui
 import pyperclip
 import pytz
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
+import windows_manager
 import broker_manager_gui_nick_config as config
 
 
@@ -73,22 +65,9 @@ shed = BackgroundScheduler()
 shed.start()
 
 
-def __activate_broker_window():
-    if platform.system() != 'Windows':
-        # Does not work on linux
-        return
-
-    name = 'Прозрачный брокер бинарных опционов'
-    broker_window_list = gw.getWindowsWithTitle(name)
-    if len(broker_window_list) == 0:
-        raise RuntimeError('Window "{}" is not found'.format(name))
-    broker_window = broker_window_list[0]
-    broker_window.activate()
-
-
 def get_deal_result(result_handler):  # возвращает результат сделки
     result = ''
-    __activate_broker_window()
+    windows_manager.activate_window('Прозрачный брокер бинарных опционов')
     for k in range(TRY_COUNT):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
         pyautogui.doubleClick(config.WIN_LOSE_XY[0], config.WIN_LOSE_XY[1])
@@ -123,7 +102,7 @@ def __set_summ(summ):
 
 
 def make_deal(option, prognosis, summ, deal_time, result_handler):
-    __activate_broker_window()
+    windows_manager.activate_window('Прозрачный брокер бинарных опционов')
     pyautogui.click(OPTION_BUTTONS[option].x, OPTION_BUTTONS[option].y, duration=0.1)
     time.sleep(2)
 
