@@ -9,7 +9,7 @@ class BrokerManagerInterface:
     )
     PROGNOSIS_LIST = ('вверх', 'вниз')
 
-    def __init__(self, result_handler, *args, **kargs):
+    def __init__(self, result_handler):
         self.scheduler = BackgroundScheduler()
         self.scheduler.start()
         self.is_deal = False

@@ -6,33 +6,11 @@ import pyperclip
 import pytz
 import time
 
+import geometry_2d
 import windows_manager
 from broker_manager_interface import BrokerManagerInterface
 
 logger = logging.getLogger('pyFinance')
-
-
-class Vector2D:
-    def __init__(self, coords):
-        self.x = coords['x']
-        self.y = coords['y']
-
-
-def get_matrix(m_size, start, delta):
-    if type(m_size) is not Vector2D:
-        raise ValueError('m_size is not a 2d vector.')
-    if type(start) is not Vector2D:
-        raise ValueError('start is not a 2d vector.')
-    if type(delta) is not Vector2D:
-        raise ValueError('delta is not a 2d vector.')
-
-    return [
-        Vector2D({
-            'x': start.x + delta.x * i,
-            'y': start.y + delta.y * j
-        })
-        for j in range(m_size.x) for i in range(m_size.y)
-    ]
 
 
 class BrokerManagerGui(BrokerManagerInterface):
@@ -40,34 +18,37 @@ class BrokerManagerGui(BrokerManagerInterface):
 
     def __init__(self, result_handler, config_file):
         super().__init__(result_handler)
-        
+
         with open(config_file, 'r') as cf:
             self.config = json.load(cf)
 
-        self.exp_hour_buttons = get_matrix(
-            m_size=Vector2D({'x': 6, 'y': 4}),
-            start=Vector2D(self.config['buttons']['expiration_time']['first_hour']),
-            delta=Vector2D(self.config['buttons']['expiration_time']['delta'])
+        self.exp_hour_buttons = geometry_2d.get_matrix(
+            m_size=geometry_2d.Vector({'x': 6, 'y': 4}),
+            start=geometry_2d.Vector(self.config['buttons']['expiration_time']['first_hour']),
+            delta=geometry_2d.Vector(self.config['buttons']['expiration_time']['delta'])
         )
 
-        self.exp_minute_buttons = get_matrix(
-            m_size=Vector2D({'x': 3, 'y': 4}),
-            start=Vector2D(self.config['buttons']['expiration_time']['first_minute']),
-            delta=Vector2D(self.config['buttons']['expiration_time']['delta'])
+        self.exp_minute_buttons = geometry_2d.get_matrix(
+            m_size=geometry_2d.Vector({'x': 3, 'y': 4}),
+            start=geometry_2d.Vector(self.config['buttons']['expiration_time']['first_minute']),
+            delta=geometry_2d.Vector(self.config['buttons']['expiration_time']['delta'])
         )
 
         self.option_buttons = dict(zip(
             BrokerManagerInterface.OPTION_LIST,
-            get_matrix(
-                m_size=Vector2D({'x': 11, 'y': 2}),
-                start=Vector2D(self.config['buttons']['option']['first']),
-                delta=Vector2D(self.config['buttons']['option']['delta'])
+            geometry_2d.get_matrix(
+                m_size=geometry_2d.Vector({'x': 11, 'y': 2}),
+                start=geometry_2d.Vector(self.config['buttons']['option']['first']),
+                delta=geometry_2d.Vector(self.config['buttons']['option']['delta'])
             )
         ))
 
         self.prognosis_table = dict(zip(
             BrokerManagerInterface.PROGNOSIS_LIST,
-            [Vector2D(self.config['prognosis']['call']), Vector2D(self.config['prognosis']['put'])]
+            [
+                geometry_2d.Vector(self.config['prognosis']['call']),
+                geometry_2d.Vector(self.config['prognosis']['put'])
+            ]
         ))
 
     def _get_deal_result(self):
@@ -94,11 +75,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             return
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
-        pyautogui.click(
-            self.option_buttons[option].x,
-            self.option_buttons[option].y,
-            duration=0.1
-        )
+        pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
         time.sleep(2)
 
         for k in range(self.TRY_COUNT):
@@ -117,11 +94,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             duration=0.1
         )
         time.sleep(2)
-        pyautogui.click(
-            self.exp_hour_buttons[deal_time.hour].x,
-            self.exp_hour_buttons[deal_time.hour].y,
-            duration=0.1
-        )
+        pyautogui.click(self.exp_hour_buttons[deal_time.hour].x, self.exp_hour_buttons[deal_time.hour].y, duration=0.1)
         time.sleep(2)
         pyautogui.click(
             self.exp_minute_buttons[deal_time.minute // 5].x,
@@ -129,11 +102,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             duration=0.1
         )
         time.sleep(2)
-        pyautogui.click(
-            self.prognosis_table[prognosis].x,
-            self.prognosis_table[prognosis].y,
-            duration=0.1
-        )
+        pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
 
         # Set up timer on finish job
