@@ -1,8 +1,16 @@
 # В этом файле предполагается реализовать управление брокером через http протокол,
 # в отличие от управления через autogui.
 
-# Всего 1 публичная функция:
+import broker_manager_interface
 
 
-def make_deal(option, prognosis, summ, deal_time, result_handler):
-    raise RuntimeError('broker_manager_http is not implemented!')
+class BrokerManagerHttp(broker_manager_interface.BrokerManagerInterface):
+
+    def __init__(self):
+        raise NotImplemented('broker_manager_http is not implemented!')
+
+    def _get_deal_result(self):
+        raise NotImplemented('broker_manager_http is not implemented!')
+
+    def make_deal(self, option, prognosis, summ, deal_time):
+        raise NotImplemented('broker_manager_http is not implemented!')

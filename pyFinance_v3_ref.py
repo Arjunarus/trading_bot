@@ -6,14 +6,13 @@ import re
 import sys
 import traceback
 
-import broker_manager_gui as broker_manager
+from broker_manager_gui import BrokerManagerGui, BrokerManagerInterface
 
 SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
 
 # Initial values
 step = 1
 init_summ = 50
-is_deal = False
 
 # Prepare logger
 logger = logging.getLogger('pyFinance')
@@ -75,13 +74,14 @@ def parse_signal(signal_text):
         return None
 
     option = signal_lines[0][:6]
-    if option not in broker_manager.OPTION_LIST:
-        logger.info('Unknown option: {}. Skip.'.format(option))
+    if option not in BrokerManagerInterface.OPTION_LIST:
+        # Если не нашли известный нам опцион, значит это не сигнал
         return None
     
     pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
     m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
     if m is None:
+        # Если вторая строка не соответствует шаблону, значит это не сигнал
         return
 
     prognosis = m.group(1)
@@ -92,7 +92,6 @@ def parse_signal(signal_text):
 
 def deal_result_process(result):
     global step
-    global is_deal
 
     logger.info('Got result: %s', result)
     if result == 'LOSE':
@@ -102,22 +101,18 @@ def deal_result_process(result):
     else:
         logger.error('Unknown result: {}'.format(result))
 
-    is_deal = False
     save_state(SAVE_STATE_FILE_PATH)
 
 
-def message_process(user_mess, mess_date):
+def message_process(message_text, message_date, broker_manager):
     global step
-    global is_deal
 
-    logger.debug('\nGot message: %s', user_mess)
-    logger.info(mess_date.strftime('Message date: %d-%m-%Y %H:%M'))
-    if is_deal:
-        logger.info('Deal is active now, skip message.')
-        return
+    logger.info('\nGot message')
+    logger.debug(message_text)
+    logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
     try:
-        signal = parse_signal(user_mess)
+        signal = parse_signal(message_text)
         if signal is None:
             logger.info('Message is not a signal, skip.')
             return
@@ -133,8 +128,7 @@ def message_process(user_mess, mess_date):
         summ = get_summ(step)
         logger.info('Сумма: {}'.format(summ))
 
-        broker_manager.make_deal(option, prognosis, summ, deal_time, deal_result_process)
-        is_deal = True
+        broker_manager.make_deal(option, prognosis, summ, deal_time)
 
     except Exception as err:
         logger.error("Ошибка: {}\n".format(err))
@@ -145,19 +139,17 @@ def main():
     # Proper number, api_id and api_hash from command line
     number, api_id, api_hash = sys.argv[1:]
     client = TelegramClient(number, api_id, api_hash)
+    broker_manager = BrokerManagerGui(deal_result_process)
 
     @client.on(events.NewMessage(chats='Scrooge Club'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
-        message_process(message['message'], message['date'])
+        message_process(message['message'], message['date'], broker_manager)
 
     load_state(SAVE_STATE_FILE_PATH)
     client.start()
     logger.info('Клиент запущен, бот активен.')
-    try:
-        client.run_until_disconnected()
-    except:
-        pass
+    client.run_until_disconnected()
 
 
 if __name__ == '__main__':
