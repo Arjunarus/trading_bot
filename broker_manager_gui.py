@@ -46,8 +46,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         self.prognosis_table = dict(zip(
             BrokerManagerInterface.PROGNOSIS_LIST,
             [
-                geometry_2d.Vector(self.config['prognosis']['call']),
-                geometry_2d.Vector(self.config['prognosis']['put'])
+                geometry_2d.Vector(self.config['buttons']['prognosis']['call']),
+                geometry_2d.Vector(self.config['buttons']['prognosis']['put'])
             ]
         ))
 
