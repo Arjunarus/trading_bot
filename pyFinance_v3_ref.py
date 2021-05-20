@@ -25,6 +25,7 @@ fh.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
 ch = logging.StreamHandler()
+ch.setFormatter(formatter)
 ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
