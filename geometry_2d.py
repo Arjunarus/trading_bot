@@ -17,5 +17,5 @@ def get_matrix(m_size, start, delta):
             'x': start.x + delta.x * i,
             'y': start.y + delta.y * j
         })
-        for j in range(m_size.x) for i in range(m_size.y)
+        for j in range(m_size.y) for i in range(m_size.x)
     ]

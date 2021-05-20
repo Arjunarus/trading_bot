@@ -123,4 +123,4 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         logger.debug("finish_datetime={}".format(finish_datetime))
 
-        self.scheduler.add_job(self._get_deal_result, 'date', run_date=finish_datetime, args=[self])
+        self.scheduler.add_job(self._get_deal_result, 'date', run_date=finish_datetime)
