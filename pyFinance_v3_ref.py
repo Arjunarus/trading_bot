@@ -137,9 +137,15 @@ def message_process(message_text, message_date, broker_manager):
 
 def main():
     # Proper number, api_id and api_hash from command line
-    number, api_id, api_hash = sys.argv[1:]
+    number, api_id, api_hash, *rest = sys.argv[1:]
+    if len(rest) > 0:
+        config = rest[0]
+    else:
+        # Default value
+        config = 'broker_manager_gui_nick_config.json'
+
     client = TelegramClient(number, api_id, api_hash)
-    broker_manager = BrokerManagerGui(deal_result_process)
+    broker_manager = BrokerManagerGui(deal_result_process, config)
 
     @client.on(events.NewMessage(chats='Scrooge Club'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
