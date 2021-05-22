@@ -23,31 +23,31 @@ class BrokerManagerGui(BrokerManagerInterface):
             self.config = json.load(cf)
 
         self.exp_hour_buttons = geometry_2d.get_matrix(
-            m_size=geometry_2d.Vector({'x': 6, 'y': 4}),
-            start=geometry_2d.Vector(self.config['buttons']['expiration_time']['first_hour']),
-            delta=geometry_2d.Vector(self.config['buttons']['expiration_time']['delta'])
+            m_size=geometry_2d.Vector(x=6, y=4),
+            start=geometry_2d.Vector(**self.config['buttons']['expiration_time']['first_hour']),
+            delta=geometry_2d.Vector(**self.config['buttons']['expiration_time']['delta'])
         )
 
         self.exp_minute_buttons = geometry_2d.get_matrix(
-            m_size=geometry_2d.Vector({'x': 3, 'y': 4}),
-            start=geometry_2d.Vector(self.config['buttons']['expiration_time']['first_minute']),
-            delta=geometry_2d.Vector(self.config['buttons']['expiration_time']['delta'])
+            m_size=geometry_2d.Vector(x=3, y=4),
+            start=geometry_2d.Vector(**self.config['buttons']['expiration_time']['first_minute']),
+            delta=geometry_2d.Vector(**self.config['buttons']['expiration_time']['delta'])
         )
 
         self.option_buttons = dict(zip(
             BrokerManagerInterface.OPTION_LIST,
             geometry_2d.get_matrix(
-                m_size=geometry_2d.Vector({'x': 11, 'y': 2}),
-                start=geometry_2d.Vector(self.config['buttons']['option']['first']),
-                delta=geometry_2d.Vector(self.config['buttons']['option']['delta'])
+                m_size=geometry_2d.Vector(x=11, y=2),
+                start=geometry_2d.Vector(**self.config['buttons']['option']['first']),
+                delta=geometry_2d.Vector(**self.config['buttons']['option']['delta'])
             )
         ))
 
         self.prognosis_table = dict(zip(
             BrokerManagerInterface.PROGNOSIS_LIST,
             [
-                geometry_2d.Vector(self.config['buttons']['prognosis']['call']),
-                geometry_2d.Vector(self.config['buttons']['prognosis']['put'])
+                geometry_2d.Vector(**self.config['buttons']['prognosis']['call']),
+                geometry_2d.Vector(**self.config['buttons']['prognosis']['put'])
             ]
         ))
 
