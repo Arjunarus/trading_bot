@@ -18,7 +18,7 @@ init_summ = 50
 logger = logging.getLogger('pyFinance')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'))
+fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
 formatter = logging.Formatter('%(asctime)s %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)
@@ -108,7 +108,8 @@ def deal_result_process(result):
 def message_process(message_text, message_date, broker_manager):
     global step
 
-    logger.info('\nGot message')
+    logger.info('')
+    logger.info('Got message')
     logger.debug(message_text)
     logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
