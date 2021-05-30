@@ -14,7 +14,7 @@ logger = logging.getLogger('pyFinance')
 
 
 class BrokerManagerGui(BrokerManagerInterface):
-    TRY_COUNT = 3
+    TRY_COUNT = 10
 
     def __init__(self, result_handler, config_file):
         super().__init__(result_handler)
@@ -60,7 +60,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
             pyautogui.doubleClick(self.config['fields']['result']['x'], self.config['fields']['result']['y'])
             pyautogui.hotkey('ctrl', 'c')
-            time.sleep(1)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
+            time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
             result = pyperclip.paste()
             if result in ['LOSE', 'WIN']:
                 break
@@ -69,9 +69,58 @@ class BrokerManagerGui(BrokerManagerInterface):
         # If result not in ['LOSE', 'WIN'] return as is
         self.result_handler(result)
 
+    def check_deal_summ(self, summ):
+        pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
+
+        pyautogui.doubleClick(
+            self.config['fields']['investment_money']['x'],
+            self.config['fields']['investment_money']['y'],
+            duration=0.1
+        )
+        time.sleep(0.5)
+
+        pyautogui.rightClick(
+            self.config['fields']['investment_money']['x'],
+            self.config['fields']['investment_money']['y'],
+            duration=0.1
+        )
+        time.sleep(0.5)
+
+        pyautogui.click(
+            self.config['fields']['copy_summ']['x'],
+            self.config['fields']['copy_summ']['y'],
+            duration=0.1
+        )
+        time.sleep(0.5)
+
+        actual_summ = int(pyperclip.paste())
+        if actual_summ == summ:
+            return True
+        else:
+            return False
+
+    def check_deal_time(self, chtime):
+        pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
+
+        pyautogui.doubleClick(
+            self.config['fields']['expiration_time']['x'],
+            self.config['fields']['expiration_time']['y'],
+            duration=0.1
+        )
+        time.sleep(0.5)
+
+        pyautogui.hotkey('ctrl', 'c')
+        time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
+
+        actual_time = int(pyperclip.paste())
+        if actual_time == chtime:
+            return True
+        else:
+            return False
+
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
-            logger.info('Deal is active now, skip new deal.')
+            logger.info('Deal is active now, skip new deal.\n')
             return
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
@@ -86,41 +135,30 @@ class BrokerManagerGui(BrokerManagerInterface):
             )
             time.sleep(1)
             pyautogui.write(str(summ), interval=0.25)
-            time.sleep(1)
+            time.sleep(0.5)
+            if self.check_deal_summ(summ):
+                logger.debug('Check deal summ True')
+                break
+            else:
+                logger.debug('Check deal summ attempt №{} - False'.format(k))
 
-        pyautogui.click(
-            self.config['fields']['expiration_time']['x'],
-            self.config['fields']['expiration_time']['y'],
-            duration=0.1
-        )
-        time.sleep(2)
-        pyautogui.click(self.exp_hour_buttons[deal_time.hour].x, self.exp_hour_buttons[deal_time.hour].y, duration=0.1)
-        time.sleep(2)
-        pyautogui.click(
-            self.exp_minute_buttons[deal_time.minute // 5].x,
-            self.exp_minute_buttons[deal_time.minute // 5].y,
-            duration=0.1
-        )
-        time.sleep(2)
+        for k in range(self.TRY_COUNT):
+            pyautogui.doubleClick(
+                self.config['fields']['expiration_time']['x'],
+                self.config['fields']['expiration_time']['y'],
+                duration=0.1
+            )
+            time.sleep(1)
+            pyautogui.write(str(deal_time), interval=0.25)
+            time.sleep(0.5)
+            if self.check_deal_time(deal_time):
+                logger.debug('Check deal time True')
+                break
+            else:
+                logger.debug('Check deal time attempt №{} - False'.format(k))
+
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
 
-        # Set up timer on finish job
-        msk_tz = pytz.timezone('Europe/Moscow')
-        now_date = datetime.datetime.now(msk_tz)
-        finish_datetime = msk_tz.localize(
-            datetime.datetime(
-                now_date.year,
-                now_date.month,
-                now_date.day,
-                deal_time.hour,
-                deal_time.minute
-            )
-        )
-        if deal_time.hour in [0, 1]:
-            finish_datetime += datetime.timedelta(days=1)
-        finish_datetime = finish_datetime.astimezone()
-
-        logger.debug("finish_datetime={}".format(finish_datetime))
-
+        finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
         self.scheduler.add_job(self._get_deal_result, 'date', run_date=finish_datetime)

@@ -18,7 +18,7 @@ init_summ = 50
 logger = logging.getLogger('pyFinance')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
+fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'))
 formatter = logging.Formatter('%(asctime)s %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)
@@ -44,7 +44,7 @@ def save_state(save_file_path):
     with open(save_file_path, 'w') as sav:
         sav.write("{} {}".format(step, init_summ))
 
-    logger.debug("Saved to {}".format(save_file_path))
+    logger.debug("Saved to {}\n".format(save_file_path))
 
 
 def load_state(save_file_path):
@@ -65,13 +65,13 @@ def load_state(save_file_path):
 
 
 def get_summ(st):
-    return int(init_summ * (2.2 ** (st - 1)))
-
+    return int(init_summ * (2.3 ** (st - 1)))
 
 def parse_signal(signal_text):
     signal_lines = signal_text.split('\n')
-    if len(signal_lines) < 2:
-        # Ожидаем как минимум 2 строки, иначе это не сигнал
+    print(signal_lines)
+    if len(signal_lines) != 1:
+        # Ожидаем 1 строку, иначе это не сигнал
         return None
 
     option = signal_lines[0][:6]
@@ -79,17 +79,16 @@ def parse_signal(signal_text):
         # Если не нашли известный нам опцион, значит это не сигнал
         return None
     
-    pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
-    m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
+    pattern = r'[\S\D]*(вверх|вниз)на(\d+)[\S\D]*'
+    m = re.match(pattern, signal_lines[0].replace(' ', '').lower())
     if m is None:
-        # Если вторая строка не соответствует шаблону, значит это не сигнал
+        # Если строка не соответствует шаблону, значит это не сигнал
         return
 
     prognosis = m.group(1)
     deal_time_str = m.group(2)
-    deal_time = datetime.datetime.strptime(deal_time_str, '%H.%M').time()
+    deal_time = int(deal_time_str) - 1
     return option, prognosis, deal_time
-
 
 def deal_result_process(result):
     global step
@@ -100,6 +99,7 @@ def deal_result_process(result):
     elif result == 'WIN':
         step = 1
     else:
+        step = 1
         logger.error('Unknown result: {}'.format(result))
 
     save_state(SAVE_STATE_FILE_PATH)
@@ -108,7 +108,6 @@ def deal_result_process(result):
 def message_process(message_text, message_date, broker_manager):
     global step
 
-    logger.info('')
     logger.info('Got message')
     logger.debug(message_text)
     logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
@@ -116,15 +115,15 @@ def message_process(message_text, message_date, broker_manager):
     try:
         signal = parse_signal(message_text)
         if signal is None:
-            logger.info('Message is not a signal, skip.')
+            logger.info('Message is not a signal, skip.\n')
             return
 
         option, prognosis, deal_time = signal
 
-        logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
+        logger.info('Получен сигнал: {opt} {prog} на {tm}'.format(
             opt=option,
             prog=prognosis,
-            tm=deal_time.strftime('%H.%M')
+            tm=deal_time
         ))
 
         summ = get_summ(step)
@@ -148,15 +147,15 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-
-    @client.on(events.NewMessage(chats='Scrooge Club'))  # создает событие, срабатывающее при появлении нового сообщения
+#🔊 СИГНАЛЫ №1 🔊
+    @client.on(events.NewMessage(chats='tFinace'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
         message_process(message['message'], message['date'], broker_manager)
 
     load_state(SAVE_STATE_FILE_PATH)
     client.start()
-    logger.info('Клиент запущен, бот активен.')
+    logger.info('Клиент запущен, бот активен.\n')
     client.run_until_disconnected()
 
 
