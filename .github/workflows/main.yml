@@ -29,7 +29,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
+      # Install requirements
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      # Runs unit tests
       - name: Run unittests
         run: python -m unittest tests/trading_bot_test.py
 
