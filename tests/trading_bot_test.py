@@ -1,20 +1,54 @@
-import datetime
-import json
-import sys
-# Питонье колдунство чтобы подменить импорт в pyFinance_v3_ref
-sys.modules['broker_manager_gui'] = __import__('test_data.broker_manager_gui', fromlist=[None])
-import trading_bot as bot
+import os
+import unittest
+import trading_bot
 
 
-def main():
-    with open('test_data/result.json', 'r') as mes:
-        messages = json.load(mes)
+class TradingBotTest(unittest.TestCase):
+    def setUp(self):
+        trading_bot.step = 1
+        trading_bot.init_summ = 50
+        trading_bot.SAVE_STATE_FILE_PATH = os.devnull
 
-    for msg in messages['messages']:
-        text = msg['text']
-        date = datetime.datetime.strptime(msg['date'], '%Y-%m-%dT%H:%M:%S')
-        bot.message_process(text, date)
+    def test_get_summ(self):
+        trading_bot.init_summ = 50
+        # step: summ
+        test_data_50 = {
+            1: 50,
+            2: 110,
+            3: 242,
+            4: 532,
+            5: 1171,
+            6: 2576,
+            7: 5668,
+            8: 12471,
+        }
 
+        for step, summ in test_data_50.items():
+            real_summ = trading_bot.get_summ(step)
+            self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
-if __name__ == '__main__':
-    main()
+        trading_bot.init_summ = 300
+        # step: summ
+        test_data_300 = {
+            1: 300,
+            2: 660,
+            3: 1452,
+            4: 3194,
+            5: 7027,
+            6: 15460,
+            7: 34013,
+            8: 74830,
+        }
+
+        for step, summ in test_data_300.items():
+            real_summ = trading_bot.get_summ(step)
+            self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
+
+    def test_deal_result_process(self):
+        init_step = trading_bot.step
+        trading_bot.deal_result_process('LOSE')
+        self.assertEqual(trading_bot.step, init_step + 1, msg='LOSE result do not increment the step.')
+
+        trading_bot.step = 10
+        trading_bot.deal_result_process('WIN')
+        self.assertEqual(trading_bot.step, 1, msg='WIN result should reset step to 1.')
