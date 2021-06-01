@@ -69,7 +69,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         # If result not in ['LOSE', 'WIN'] return as is
         self.result_handler(result)
 
-    def check_deal_summ(self, summ):
+    def get_deal_summ(self):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
 
         pyautogui.doubleClick(
@@ -92,14 +92,9 @@ class BrokerManagerGui(BrokerManagerInterface):
             duration=0.1
         )
         time.sleep(0.5)
-
-        actual_summ = int(pyperclip.paste())
-        if actual_summ == summ:
-            return True
-        else:
-            return False
-
-    def check_deal_time(self, chtime):
+        return pyperclip.paste()
+        
+    def get_deal_time(self):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
 
         pyautogui.doubleClick(
@@ -111,12 +106,7 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         pyautogui.hotkey('ctrl', 'c')
         time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
-
-        actual_time = int(pyperclip.paste())
-        if actual_time == chtime:
-            return True
-        else:
-            return False
+        return pyperclip.paste()
 
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
@@ -127,7 +117,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
         time.sleep(2)
 
-        for k in range(self.TRY_COUNT):
+        for k in range(BrokerManagerGui.TRY_COUNT):
             pyautogui.doubleClick(
                 self.config['fields']['investment_money']['x'],
                 self.config['fields']['investment_money']['y'],
@@ -136,13 +126,13 @@ class BrokerManagerGui(BrokerManagerInterface):
             time.sleep(1)
             pyautogui.write(str(summ), interval=0.25)
             time.sleep(0.5)
-            if self.check_deal_summ(summ):
+            if self.get_deal_summ() == str(summ)
                 logger.debug('Check deal summ True')
                 break
             else:
                 logger.debug('Check deal summ attempt №{} - False'.format(k))
 
-        for k in range(self.TRY_COUNT):
+        for k in range(BrokerManagerGui.TRY_COUNT):
             pyautogui.doubleClick(
                 self.config['fields']['expiration_time']['x'],
                 self.config['fields']['expiration_time']['y'],
@@ -151,7 +141,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             time.sleep(1)
             pyautogui.write(str(deal_time), interval=0.25)
             time.sleep(0.5)
-            if self.check_deal_time(deal_time):
+            if self.get_deal_time() == str(deal_time)
                 logger.debug('Check deal time True')
                 break
             else:
