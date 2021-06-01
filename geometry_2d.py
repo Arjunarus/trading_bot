@@ -3,14 +3,23 @@ class Vector:
         self.x = x
         self.y = y
 
+    def __eq__(self, other):
+        return other.x == self.x and other.y == self.y
+
+    def __ne__(self, other):
+        return not other == self
+
+    def __add__(self, other):
+        return Vector(
+            x=self.x + other.x,
+            y=self.y + other.y
+        )
+
 
 def get_matrix(m_size, start, delta):
-    if type(m_size) is not Vector:
-        raise ValueError('m_size is not a 2d vector.')
-    if type(start) is not Vector:
-        raise ValueError('start is not a 2d vector.')
-    if type(delta) is not Vector:
-        raise ValueError('delta is not a 2d vector.')
+    assert type(m_size) is Vector, 'm_size is not a 2d vector.'
+    assert type(start) is Vector, 'start is not a 2d vector.'
+    assert type(delta) is Vector, 'delta is not a 2d vector.'
 
     return [
         Vector(x=start.x + delta.x * i, y=start.y + delta.y * j)
