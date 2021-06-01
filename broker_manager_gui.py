@@ -126,7 +126,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             time.sleep(1)
             pyautogui.write(str(summ), interval=0.25)
             time.sleep(0.5)
-            if self.get_deal_summ() == str(summ)
+            if self.get_deal_summ() == str(summ):
                 logger.debug('Check deal summ True')
                 break
             else:
@@ -141,7 +141,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             time.sleep(1)
             pyautogui.write(str(deal_time), interval=0.25)
             time.sleep(0.5)
-            if self.get_deal_time() == str(deal_time)
+            if self.get_deal_time() == str(deal_time):
                 logger.debug('Check deal time True')
                 break
             else:
