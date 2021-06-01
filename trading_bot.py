@@ -13,29 +13,7 @@ SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 
 # Initial values
 step = 1
 init_summ = 50
-
-# Prepare logger
 logger = logging.getLogger('pyFinance')
-logger.setLevel(logging.DEBUG)
-
-fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
-formatter = logging.Formatter('%(asctime)s %(message)s')
-fh.setFormatter(formatter)
-fh.setLevel(logging.DEBUG)
-logger.addHandler(fh)
-
-ch = logging.StreamHandler()
-ch.setFormatter(formatter)
-ch.setLevel(logging.INFO)
-logger.addHandler(ch)
-
-# Prepare telethon logger
-telethon_logger = logging.getLogger('telethon')
-tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-tfh.setFormatter(formatter)
-telethon_logger.setLevel(logging.DEBUG)
-telethon_logger.addHandler(tfh)
 
 
 def save_state(save_file_path):
@@ -137,7 +115,32 @@ def message_process(message_text, message_date, broker_manager):
         traceback.print_exc(file=sys.stdout)
 
 
+def setup_logging():
+    # Setup main logger
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
+    formatter = logging.Formatter('%(asctime)s %(message)s')
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    ch.setLevel(logging.INFO)
+    logger.addHandler(ch)
+
+    # Setup telethon logger
+    telethon_logger = logging.getLogger('telethon')
+    tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    tfh.setFormatter(formatter)
+    telethon_logger.setLevel(logging.DEBUG)
+    telethon_logger.addHandler(tfh)
+
+
 def main():
+    setup_logging()
+
     # Proper number, api_id and api_hash from command line
     number, api_id, api_hash, *rest = sys.argv[1:]
     if len(rest) > 0:
