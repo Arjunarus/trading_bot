@@ -1,3 +1,4 @@
+import datetime
 import os
 import unittest
 
@@ -53,3 +54,30 @@ class TradingBotTest(unittest.TestCase):
         trading_bot.step = 10
         trading_bot.deal_result_process('WIN')
         self.assertEqual(trading_bot.step, 1, msg='WIN result should reset step to 1.')
+
+    def test_parse_signal_invalid(self):
+        self.assertIsNone(trading_bot.parse_signal('blablabla'))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD\nВверх  17.30 мск \n\n'))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD Вверх до 17.30 мск'))
+        self.assertIsNone(trading_bot.parse_signal('BLABLA\nВверх до 17.30 мск'))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб'))
+
+        # test GBPUSD is absent
+        self.assertIsNone(trading_bot.parse_signal('GBPUSD\nВверх до 17.30 мск'))
+
+    def test_parse_signal(self):
+        signal = trading_bot.parse_signal('EURUSD\nВверх до 17.30 мск \n\n')
+        r_signal = ('EURUSD', 'вверх', datetime.time(hour=17, minute=30))
+        self.assertTupleEqual(signal, r_signal)
+
+        signal = trading_bot.parse_signal('EURUSD\nВниз до 18.00 мск')
+        r_signal = ('EURUSD', 'вниз', datetime.time(hour=18, minute=00))
+        self.assertTupleEqual(signal, r_signal)
+
+        signal = trading_bot.parse_signal('USDJPY\nвВеРх ДО23.50 мск')
+        r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
+        self.assertTupleEqual(signal, r_signal)
+
+        signal = trading_bot.parse_signal('USDJPY\nвВеРхДО23.50МСК')
+        r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
+        self.assertTupleEqual(signal, r_signal)
