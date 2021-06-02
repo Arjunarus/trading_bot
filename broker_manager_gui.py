@@ -1,9 +1,7 @@
-import datetime
 import json
 import logging
 import pyautogui
 import pyperclip
-import pytz
 import time
 
 import geometry_2d
@@ -16,9 +14,7 @@ logger = logging.getLogger('pyFinance')
 class BrokerManagerGui(BrokerManagerInterface):
     TRY_COUNT = 3
 
-    def __init__(self, result_handler, config_file):
-        super().__init__(result_handler)
-
+    def __init__(self, config_file):
         with open(config_file, 'r') as cf:
             self.config = json.load(cf)
 
@@ -51,9 +47,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             ]
         ))
 
-    def _get_deal_result(self):
-        self.is_deal = False
-
+    def get_deal_result(self):
         result = ''
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         for k in range(BrokerManagerGui.TRY_COUNT):
@@ -67,13 +61,9 @@ class BrokerManagerGui(BrokerManagerInterface):
             time.sleep(5)
 
         # If result not in ['LOSE', 'WIN'] return as is
-        self.result_handler(result)
+        return result
 
     def make_deal(self, option, prognosis, summ, deal_time):
-        if self.is_deal:
-            logger.info('Deal is active now, skip new deal.')
-            return
-
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
         time.sleep(2)
@@ -103,24 +93,3 @@ class BrokerManagerGui(BrokerManagerInterface):
         )
         time.sleep(2)
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
-        self.is_deal = True
-
-        # Set up timer on finish job
-        msk_tz = pytz.timezone('Europe/Moscow')
-        now_date = datetime.datetime.now(msk_tz)
-        finish_datetime = msk_tz.localize(
-            datetime.datetime(
-                now_date.year,
-                now_date.month,
-                now_date.day,
-                deal_time.hour,
-                deal_time.minute
-            )
-        )
-        if deal_time.hour in [0, 1]:
-            finish_datetime += datetime.timedelta(days=1)
-        finish_datetime = finish_datetime.astimezone()
-
-        logger.debug("finish_datetime={}".format(finish_datetime))
-
-        self.scheduler.add_job(self._get_deal_result, 'date', run_date=finish_datetime)

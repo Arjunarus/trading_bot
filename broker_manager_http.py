@@ -9,7 +9,7 @@ class BrokerManagerHttp(broker_manager_interface.BrokerManagerInterface):
     def __init__(self):
         raise NotImplemented('broker_manager_http is not implemented!')
 
-    def _get_deal_result(self):
+    def get_deal_result(self):
         raise NotImplemented('broker_manager_http is not implemented!')
 
     def make_deal(self, option, prognosis, summ, deal_time):
