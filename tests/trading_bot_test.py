@@ -3,16 +3,19 @@ import os
 import unittest
 
 import trading_bot
+import broker_manager_interface
+
+
+class BrokerManagerStub(broker_manager_interface.BrokerManagerInterface):
+    def get_deal_result(self):
+        return 'WIN'
+
+    def make_deal(self, option, prognosis, summ, deal_time):
+        return
 
 
 class TradingBotTest(unittest.TestCase):
-    def setUp(self):
-        trading_bot.step = 1
-        trading_bot.init_summ = 50
-        trading_bot.SAVE_STATE_FILE_PATH = os.devnull
-
     def test_get_summ(self):
-        trading_bot.init_summ = 50
         # step: summ
         test_data_50 = {
             1: 50,
@@ -26,10 +29,9 @@ class TradingBotTest(unittest.TestCase):
         }
 
         for step, summ in test_data_50.items():
-            real_summ = trading_bot.get_summ(step)
+            real_summ = trading_bot.get_summ(50, step)
             self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
-        trading_bot.init_summ = 300
         # step: summ
         test_data_300 = {
             1: 300,
@@ -43,17 +45,23 @@ class TradingBotTest(unittest.TestCase):
         }
 
         for step, summ in test_data_300.items():
-            real_summ = trading_bot.get_summ(step)
+            real_summ = trading_bot.get_summ(300, step)
             self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
-    def test_deal_result_process(self):
-        init_step = trading_bot.step
-        trading_bot.deal_result_process('LOSE')
-        self.assertEqual(trading_bot.step, init_step + 1, msg='LOSE result do not increment the step.')
+    def test_start_finish_deal(self):
+        tbot = trading_bot.TradingBot(
+            init_summ=50,
+            step=1,
+            broker_manager=BrokerManagerStub(),
+            save_state_file_path=os.devnull
+        )
 
-        trading_bot.step = 10
-        trading_bot.deal_result_process('WIN')
-        self.assertEqual(trading_bot.step, 1, msg='WIN result should reset step to 1.')
+        self.assertFalse(tbot.is_deal)
+        tbot.start_deal(None, None, None)
+        self.assertTrue(tbot.is_deal)
+
+        tbot.finish_deal()
+        self.assertFalse(tbot.is_deal)
 
     def test_parse_signal_invalid(self):
         self.assertIsNone(trading_bot.parse_signal('blablabla'))

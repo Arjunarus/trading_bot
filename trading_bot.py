@@ -39,39 +39,50 @@ def parse_signal(signal_text):
     return option, prognosis, deal_time
 
 
-class TradingBot:
-    SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
+def get_summ(init_summ, step):
+    return int(init_summ * (2.2 ** (step - 1)))
 
-    def __init__(self, init_summ, step, broker_manager):
+
+class TradingBot:
+    def __init__(
+            self,
+            init_summ,
+            step,
+            broker_manager,
+            save_state_file_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
+    ):
         self.init_summ = init_summ
         self.step = step
         self.broker_manager = broker_manager
+        self.save_state_file_path = save_state_file_path
         self.is_deal = False
         self.scheduler = BackgroundScheduler()
         self.scheduler.start()
 
-    def save_state(self, save_file_path=SAVE_STATE_FILE_PATH):
-        with open(save_file_path, 'w') as sav:
+    def save_state(self):
+        with open(self.save_state_file_path, 'w') as sav:
             sav.write("{} {}".format(self.step, self.init_summ))
 
-        logger.debug("Saved to {}".format(save_file_path))
+        logger.debug("Saved to {}".format(self.save_state_file_path))
 
-    def load_state(self, save_file_path=SAVE_STATE_FILE_PATH):
-
-        if not os.path.isfile(save_file_path):
-            logger.error("Save state {} is not exists".format(save_file_path))
+    def load_state(self):
+        if not os.path.isfile(self.save_state_file_path):
+            logger.error("Save state {} is not exists".format(self.save_state_file_path))
             return
 
-        with open(save_file_path, 'r') as sav:
+        with open(self.save_state_file_path, 'r') as sav:
             content = sav.read()
         self.step, self.init_summ = (int(x) for x in content.split())
 
-        logger.debug("Loaded from {}".format(save_file_path))
+        logger.debug("Loaded from {}".format(self.save_state_file_path))
         logger.debug('step = {}'.format(self.step))
         logger.debug('init_summ = {}'.format(self.init_summ))
 
-    def get_summ(self):
-        return int(self.init_summ * (2.2 ** (self.step - 1)))
+    def start_deal(self, option, prognosis, deal_time):
+        summ = get_summ(self.init_summ, self.step)
+        logger.info('Сумма: {}'.format(summ))
+        self.broker_manager.make_deal(option, prognosis, summ, deal_time)
+        self.is_deal = True
 
     def finish_deal(self):
         result = self.broker_manager.get_deal_result()
@@ -84,6 +95,7 @@ class TradingBot:
         else:
             logger.error('Unknown result: {}'.format(result))
 
+        self.is_deal = False
         self.save_state()
 
     def message_process(self, message_text, message_date):
@@ -110,10 +122,7 @@ class TradingBot:
                 logger.info('Deal is not finished yet, skip new signal.')
                 return
 
-            summ = self.get_summ()
-            logger.info('Сумма: {}'.format(summ))
-            self.broker_manager.make_deal(option, prognosis, summ, deal_time)
-            self.is_deal = True
+            self.start_deal(option, prognosis, deal_time)
 
             # Set up timer on finish job
             msk_tz = pytz.timezone('Europe/Moscow')
