@@ -8,6 +8,7 @@ import traceback
 
 from broker_manager_gui import BrokerManagerGui, BrokerManagerInterface
 
+BOT_DESCRIPTORS_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'signal_bot_descriptors.json')
 SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
 
 # Initial values
@@ -142,12 +143,8 @@ def main():
     setup_logging()
 
     # Proper number, api_id and api_hash from command line
-    number, api_id, api_hash, *rest = sys.argv[1:]
-    if len(rest) > 0:
-        config = rest[0]
-    else:
-        # Default value
-        config = 'broker_manager_gui_nick_config.json'
+    number, api_id, api_hash, bot_descriptor_name, *rest = sys.argv[1:]
+    config = rest[0] if len(rest) > 0 else 'broker_manager_gui_nick_config.json'
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)

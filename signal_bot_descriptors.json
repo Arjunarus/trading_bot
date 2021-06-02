@@ -2,7 +2,7 @@
     "scrudge": {
         "name": "Scrooge Club",
         "martingale": true,
-        "type": "standard",
+        "type": "classic",
         "parser": {
             "lines": 2,
             "pattern": "([A-Z]{6})\n(вверх|вниз)до(\\d{2}).(\\d{2})мск",
@@ -16,7 +16,7 @@
     "signal_1_and_martingale": {
         "name": "\uD83D\uDD0A СИГНАЛЫ №1 \uD83D\uDD0A",
         "martingale": true,
-        "type": "blitz",
+        "type": "sprint",
         "parser": {
             "lines": 1,
             "pattern": "([A-Z]{6})(вверх|вниз)на(\\d+)[\\S\\D]*",
@@ -30,7 +30,7 @@
     "signal_1_no_martingale": {
         "name": "\uD83D\uDD0A СИГНАЛЫ №1 \uD83D\uDD0A",
         "martingale": false,
-        "type": "blitz",
+        "type": "sprint",
         "parser": {
             "lines": 1,
             "pattern": "([A-Z]{6})(вверх|вниз)на(\\d+)[\\S\\D]*",
