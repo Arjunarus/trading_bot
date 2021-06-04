@@ -2,9 +2,9 @@ import os
 import unittest
 
 # Workaround for github tests
-if os.name == 'linux' and os.environ.get('DISPLAY') is None:
+if os.name == 'posix' and os.environ.get('DISPLAY') is None:
     os.environ['DISPLAY'] = ':0.0'
-    
+
 import trading_bot
 
 
