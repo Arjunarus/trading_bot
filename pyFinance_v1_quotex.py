@@ -38,6 +38,7 @@ telethon_logger.setLevel(logging.DEBUG)
 telethon_logger.addHandler(tfh)
 
 
+
 def save_state(save_file_path):
     global step
     global init_summ
@@ -148,7 +149,7 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-
+    
     @client.on(events.NewMessage(chats='🔊 СИГНАЛЫ №1 🔊'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()

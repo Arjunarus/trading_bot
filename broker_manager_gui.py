@@ -116,6 +116,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
         time.sleep(2)
+        pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
+        time.sleep(5)
 
         for k in range(BrokerManagerGui.TRY_COUNT):
             pyautogui.doubleClick(
