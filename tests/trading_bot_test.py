@@ -9,6 +9,10 @@ class TradingBotTest(unittest.TestCase):
         trading_bot.init_summ = 50
         trading_bot.SAVE_STATE_FILE_PATH = os.devnull
 
+        # Workaround for github tests
+        if os.name == 'linux' and os.environ.get('DISPLAY') is None:
+            os.environ['DISPLAY'] = ':0.0'
+
     def test_get_summ(self):
         trading_bot.init_summ = 50
         # step: summ
