@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import unittest
 
@@ -49,10 +50,12 @@ class TradingBotTest(unittest.TestCase):
             self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
     def test_start_finish_deal(self):
+        logger = logging.getLogger('pyFinance')
         tbot = trading_bot.TradingBot(
             init_summ=50,
             step=1,
             broker_manager=BrokerManagerStub(),
+            logger=logger,
             save_state_file_path=os.devnull
         )
 
