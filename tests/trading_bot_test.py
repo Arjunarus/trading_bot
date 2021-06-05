@@ -66,15 +66,12 @@ class TradingBotTest(unittest.TestCase):
         tbot.finish_deal()
         self.assertFalse(tbot.is_deal)
 
-    def test_parse_signal_invalid(self):
+    def test_parse_invalid_signal(self):
         self.assertIsNone(trading_bot.parse_signal('blablabla'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD\nВверх  17.30 мск \n\n'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD Вверх до 17.30 мск'))
         self.assertIsNone(trading_bot.parse_signal('BLABLA\nВверх до 17.30 мск'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб'))
-
-        # test GBPUSD is absent
-        self.assertIsNone(trading_bot.parse_signal('GBPUSD\nВверх до 17.30 мск'))
 
     def test_parse_signal(self):
         signal = trading_bot.parse_signal('EURUSD\nВверх до 17.30 мск \n\n')
