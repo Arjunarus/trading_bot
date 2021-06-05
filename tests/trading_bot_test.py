@@ -70,7 +70,7 @@ class TradingBotTest(unittest.TestCase):
         self.assertIsNone(trading_bot.parse_signal('blablabla'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD\nВверх  17.30 мск \n\n'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD Вверх до 17.30 мск'))
-        self.assertIsNone(trading_bot.parse_signal('BLABLA\nВверх до 17.30 мск'))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD\n\nВверх до 17.30 мск'))
         self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб'))
 
     def test_parse_signal(self):
@@ -86,6 +86,6 @@ class TradingBotTest(unittest.TestCase):
         r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('USDJPY\nвВеРхДО23.50МСК')
-        r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
+        signal = trading_bot.parse_signal('BLABLA\nвВеРхДО23.50МСК')
+        r_signal = ('BLABLA', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)

@@ -26,8 +26,8 @@ def parse_signal(signal_text):
     return option, prognosis, deal_time
 
 
-def get_summ(init_summ, step):
-    return int(init_summ * (2.2 ** (step - 1)))
+def get_summ(init_sum, step):
+    return int(init_sum * (2.2 ** (step - 1)))
 
 
 class TradingBot:
