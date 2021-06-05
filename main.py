@@ -13,7 +13,7 @@ BOT_DESCRIPTORS_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file_
 def setup_logging(logger):
     # Setup main logger
     logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
+    fh = logging.FileHandler(os.path.join('log', datetime.datetime.now().strftime('%Y-%m-%d.log')), 'a', 'utf-8')
     formatter = logging.Formatter('%(asctime)s %(message)s')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
@@ -26,7 +26,7 @@ def setup_logging(logger):
 
     # Setup telethon logger
     telethon_logger = logging.getLogger('telethon')
-    tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
+    tfh = logging.FileHandler(os.path.join('log', datetime.datetime.now().strftime('%Y-%m-%d_telethon.log')))
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     tfh.setFormatter(formatter)
     telethon_logger.setLevel(logging.DEBUG)
