@@ -152,9 +152,9 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-#🔊 СИГНАЛЫ №1 🔊
+
     @client.on(
-        events.NewMessage(chats='tFinace'))  # создает событие, срабатывающее при появлении нового сообщения
+        events.NewMessage(chats='🔊 СИГНАЛЫ №1 🔊'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
         message_process(message['message'], message['date'], broker_manager)
