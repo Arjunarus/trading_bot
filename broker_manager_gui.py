@@ -87,8 +87,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         time.sleep(0.5)
 
         pyautogui.click(
-            self.config['fields']['copy_summ']['x'],
-            self.config['fields']['copy_summ']['y'],
+            self.config['context_menu']['copy']['x'],
+            self.config['context_menu']['copy']['y'],
             duration=0.1
         )
         time.sleep(0.5)

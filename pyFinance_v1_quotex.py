@@ -12,13 +12,14 @@ SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 
 
 # Initial values
 step = 1
-init_summ = 50
+INIT_SUMM = 50
+TIME_OFFSET = 1
 
 # Prepare logger
 logger = logging.getLogger('pyFinance')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
+fh = logging.FileHandler(datetime.datetime.now().strftime('logging/%Y-%m-%d.log'), 'a', 'utf-8')
 formatter = logging.Formatter('%(asctime)s %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)
@@ -31,26 +32,25 @@ logger.addHandler(ch)
 
 # Prepare telethon logger
 telethon_logger = logging.getLogger('telethon')
-tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
+tfh = logging.FileHandler(datetime.datetime.now().strftime('logging/%Y-%m-%d_telethon.log'))
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 tfh.setFormatter(formatter)
 telethon_logger.setLevel(logging.DEBUG)
 telethon_logger.addHandler(tfh)
 
 
-
 def save_state(save_file_path):
     global step
-    global init_summ
+    global INIT_SUMM
     with open(save_file_path, 'w') as sav:
-        sav.write("{} {}".format(step, init_summ))
+        sav.write("{} {}".format(step, INIT_SUMM))
 
     logger.debug("Saved to {}\n".format(save_file_path))
 
 
 def load_state(save_file_path):
     global step
-    global init_summ
+    global INIT_SUMM
 
     if not os.path.isfile(save_file_path):
         logger.error("Save state {} is not exists".format(save_file_path))
@@ -58,15 +58,16 @@ def load_state(save_file_path):
 
     with open(save_file_path, 'r') as sav:
         content = sav.read()
-    step, init_summ = map(int, content.split())
+    step, INIT_SUMM = map(int, content.split())
 
     logger.debug("Loaded from {}".format(save_file_path))
     logger.debug('step = {}'.format(step))
-    logger.debug('init_summ = {}'.format(init_summ))
+    logger.debug('init_summ = {}'.format(INIT_SUMM))
 
 
 def get_summ(st):
-    return int(init_summ * (2.3 ** (st - 1)))
+    return int(INIT_SUMM * (2.3 ** (st - 1)))
+
 
 def parse_signal(signal_text):
     signal_lines = signal_text.split('\n')
@@ -79,7 +80,7 @@ def parse_signal(signal_text):
     if option not in BrokerManagerInterface.OPTION_LIST:
         # Если не нашли известный нам опцион, значит это не сигнал
         return None
-    
+
     pattern = r'[\S\D]*(вверх|вниз)на(\d+)[\S\D]*'
     m = re.match(pattern, signal_lines[0].replace(' ', '').lower())
     if m is None:
@@ -88,8 +89,9 @@ def parse_signal(signal_text):
 
     prognosis = m.group(1)
     deal_time_str = m.group(2)
-    deal_time = int(deal_time_str) - 1
+    deal_time = int(deal_time_str)
     return option, prognosis, deal_time
+
 
 def deal_result_process(result):
     global step
@@ -108,7 +110,7 @@ def deal_result_process(result):
 
 def message_process(message_text, message_date, broker_manager):
     global step
-    
+
     logger.info('')
     logger.info('Got message')
     logger.debug(message_text)
@@ -121,6 +123,7 @@ def message_process(message_text, message_date, broker_manager):
             return
 
         option, prognosis, deal_time = signal
+        deal_time = deal_time - TIME_OFFSET
 
         logger.info('Получен сигнал: {opt} {prog} на {tm}'.format(
             opt=option,
@@ -149,8 +152,9 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-    
-    @client.on(events.NewMessage(chats='🔊 СИГНАЛЫ №1 🔊'))  # создает событие, срабатывающее при появлении нового сообщения
+#🔊 СИГНАЛЫ №1 🔊
+    @client.on(
+        events.NewMessage(chats='tFinace'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
         message_process(message['message'], message['date'], broker_manager)

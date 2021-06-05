@@ -49,8 +49,11 @@
         "result": {
             "x": 1330,
             "y": 462
-        },
-          "copy_summ": {
+        }
+    },
+
+    "context_menu": {
+        "copy": {
             "x": 1170,
             "y": 195
         }
