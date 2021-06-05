@@ -6,8 +6,6 @@ import sys
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from broker_manager_gui import BrokerManagerInterface
-
 
 def parse_signal(signal_text):
     signal_lines = signal_text.split('\n')
@@ -16,10 +14,6 @@ def parse_signal(signal_text):
         return
 
     option = signal_lines[0][:6]
-    if option not in BrokerManagerInterface.OPTION_LIST:
-        # Если не нашли известный нам опцион, значит это не сигнал
-        return
-    
     pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
     m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
     if m is None:
@@ -106,12 +100,15 @@ class TradingBot:
                 return
 
             option, prognosis, deal_time = signal
-
             self.logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
                 opt=option,
                 prog=prognosis,
                 tm=deal_time.strftime('%H.%M')
             ))
+
+            if option not in self.broker_manager.OPTION_LIST:
+                self.logger.info('Unknown option {}, skip.'.format(option))
+                return
 
             if self.is_deal:
                 self.logger.info('Deal is not finished yet, skip new signal.')
