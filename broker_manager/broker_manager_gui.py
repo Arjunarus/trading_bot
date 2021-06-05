@@ -1,5 +1,7 @@
 import json
 import logging
+import os.path
+
 import pyautogui
 import pyperclip
 import time
@@ -15,7 +17,7 @@ class BrokerManagerGui(BrokerManagerInterface):
     TRY_COUNT = 3
 
     def __init__(self, config_file):
-        with open(config_file, 'r') as cf:
+        with open(os.path.join(os.path.dirname(__file__), config_file), 'r') as cf:
             self.config = json.load(cf)
 
         self.exp_hour_buttons = geometry_2d.get_matrix(

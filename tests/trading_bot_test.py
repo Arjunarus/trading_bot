@@ -4,10 +4,10 @@ import os
 import unittest
 
 import trading_bot
-import broker_manager_interface
+import broker_manager.broker_manager_interface as bm_interface
 
 
-class BrokerManagerStub(broker_manager_interface.BrokerManagerInterface):
+class BrokerManagerStub(bm_interface.BrokerManagerInterface):
     def get_deal_result(self):
         return 'WIN'
 

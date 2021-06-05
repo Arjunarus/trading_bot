@@ -5,7 +5,7 @@ import sys
 from telethon import TelegramClient, events
 
 import trading_bot
-from broker_manager_gui import BrokerManagerGui
+from broker_manager.broker_manager_gui import BrokerManagerGui
 
 BOT_DESCRIPTORS_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'signal_bot_descriptors.json')
 
