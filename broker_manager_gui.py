@@ -86,11 +86,14 @@ class BrokerManagerGui(BrokerManagerInterface):
         )
         time.sleep(0.5)
 
-        pyautogui.click(
+        pyautogui.move(
             self.config['context_menu']['copy']['x'],
             self.config['context_menu']['copy']['y'],
             duration=0.1
         )
+
+        pyautogui.click()
+
         time.sleep(0.5)
         return pyperclip.paste()
         
