@@ -86,17 +86,15 @@ class BrokerManagerGui(BrokerManagerInterface):
         )
         time.sleep(0.5)
 
-        pyautogui.move(
-            self.config['context_menu']['copy']['x'],
-            self.config['context_menu']['copy']['y'],
+        pyautogui.click(
+            self.config['fields']['investment_money']['x'] + self.config['context_menu']['copy']['x'],
+            self.config['fields']['investment_money']['y'] + self.config['context_menu']['copy']['y'],
             duration=0.1
         )
 
-        pyautogui.click()
-
         time.sleep(0.5)
         return pyperclip.paste()
-        
+
     def get_deal_time(self):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
 
@@ -111,16 +109,25 @@ class BrokerManagerGui(BrokerManagerInterface):
         time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
         return pyperclip.paste()
 
+    def click_option(self, point):
+        for k in range(BrokerManagerGui.TRY_COUNT):
+            screenshot_1 = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+            pyautogui.click(point.x, point.y, duration=0.1)
+            time.sleep(3)
+            screenshot_2 = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+            if screenshot_1 != screenshot_2:
+                logger.debug('Check option button - True')
+                return
+            else:
+                logger.debug('Check option button attempt №{} - False'.format(k))
+
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
             logger.info('Deal is active now, skip new deal.\n')
             return
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
-        pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
-        time.sleep(2)
-        pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
-        time.sleep(5)
+        self.click_option(self.option_buttons[option])
 
         for k in range(BrokerManagerGui.TRY_COUNT):
             pyautogui.doubleClick(
@@ -132,7 +139,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             pyautogui.write(str(summ), interval=0.25)
             time.sleep(0.5)
             if self.get_deal_summ() == str(summ):
-                logger.debug('Check deal summ True')
+                logger.debug('Check deal summ - True')
                 break
             else:
                 logger.debug('Check deal summ attempt №{} - False'.format(k))
@@ -147,7 +154,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             pyautogui.write(str(deal_time), interval=0.25)
             time.sleep(0.5)
             if self.get_deal_time() == str(deal_time):
-                logger.debug('Check deal time True')
+                logger.debug('Check deal time - True')
                 break
             else:
                 logger.debug('Check deal time attempt №{} - False'.format(k))
