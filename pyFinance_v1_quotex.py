@@ -123,7 +123,7 @@ def message_process(message_text, message_date, broker_manager):
             return
 
         option, prognosis, deal_time = signal
-        deal_time = deal_time - TIME_OFFSET
+        deal_time -= TIME_OFFSET
 
         logger.info('Получен сигнал: {opt} {prog} на {tm}'.format(
             opt=option,
