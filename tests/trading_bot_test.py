@@ -74,18 +74,31 @@ class TradingBotTest(unittest.TestCase):
         self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб'))
 
     def test_parse_signal(self):
-        signal = trading_bot.parse_signal('EURUSD\nВверх до 17.30 мск \n\n')
+        signal = trading_bot.parse_signal('\n'.join([
+            'EURUSD',
+            'Вверх до 17.30 мск ',
+            ''
+        ]))
         r_signal = ('EURUSD', 'вверх', datetime.time(hour=17, minute=30))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('EURUSD\nВниз до 18.00 мск')
+        signal = trading_bot.parse_signal('\n'.join([
+            'EURUSD',
+            'Вниз до 18.00 мск',
+        ]))
         r_signal = ('EURUSD', 'вниз', datetime.time(hour=18, minute=00))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('USDJPY\nвВеРх ДО23.50 мск')
+        signal = trading_bot.parse_signal('\n'.join([
+            'USDJPY',
+            'вВеРх ДО23.50 мск'
+        ]))
         r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('BLABLA\nвВеРхДО23.50МСК')
+        signal = trading_bot.parse_signal('\n'.join([
+            'BLABLA',
+            'вВеРхДО23.50МСК'
+        ]))
         r_signal = ('BLABLA', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
