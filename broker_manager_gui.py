@@ -14,7 +14,7 @@ logger = logging.getLogger('pyFinance')
 
 
 class BrokerManagerGui(BrokerManagerInterface):
-    TRY_COUNT = 10
+    TRY_COUNT = 5
 
     def __init__(self, result_handler, config_file):
         super().__init__(result_handler)
@@ -57,11 +57,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         result = ''
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         for k in range(BrokerManagerGui.TRY_COUNT):
-            pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
-            pyautogui.doubleClick(self.config['fields']['result']['x'], self.config['fields']['result']['y'])
-            pyautogui.hotkey('ctrl', 'c')
-            time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
-            result = pyperclip.paste()
+            result = self.get_field(self.config['fields']['result'])
             if result in ['LOSE', 'WIN']:
                 break
             time.sleep(5)
@@ -69,57 +65,57 @@ class BrokerManagerGui(BrokerManagerInterface):
         # If result not in ['LOSE', 'WIN'] return as is
         self.result_handler(result)
 
-    def get_deal_summ(self):
+    def set_field(self, field, value):
+        pyautogui.doubleClick(
+            field['x'],
+            field['y'],
+            duration=0.1
+        )
+        time.sleep(0.5)
+        pyautogui.write(str(value), interval=0.25)
+        time.sleep(0.5)
+
+    def get_field(self, field, use_mouse=False):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
 
         pyautogui.doubleClick(
-            self.config['fields']['investment_money']['x'],
-            self.config['fields']['investment_money']['y'],
+            field['x'],
+            field['y'],
             duration=0.1
         )
         time.sleep(0.5)
 
-        pyautogui.rightClick(
-            self.config['fields']['investment_money']['x'],
-            self.config['fields']['investment_money']['y'],
-            duration=0.1
-        )
-        time.sleep(0.5)
+        if use_mouse:
+            pyautogui.rightClick(
+                field['x'],
+                field['y'],
+                duration=0.1
+            )
+            time.sleep(0.5)
 
-        pyautogui.click(
-            self.config['fields']['investment_money']['x'] + self.config['context_menu']['copy']['x'],
-            self.config['fields']['investment_money']['y'] + self.config['context_menu']['copy']['y'],
-            duration=0.1
-        )
+            pyautogui.click(
+                field['x'] + self.config['context_menu']['copy']['x'],
+                field['y'] + self.config['context_menu']['copy']['y'],
+                duration=0.1
+            )
+        else:
+            # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
+            pyautogui.hotkey('ctrl', 'c')
 
         time.sleep(0.5)
         return pyperclip.paste()
 
-    def get_deal_time(self):
-        pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
-
-        pyautogui.doubleClick(
-            self.config['fields']['expiration_time']['x'],
-            self.config['fields']['expiration_time']['y'],
-            duration=0.1
-        )
-        time.sleep(0.5)
-
-        pyautogui.hotkey('ctrl', 'c')
-        time.sleep(0.5)  # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
-        return pyperclip.paste()
-
-    def click_option(self, point):
+    def click_option(self, option):
+        screenshot_1 = pyautogui.screenshot(region=(option.x - 5, option.y - 5, option.x + 5, option.y + 5))
         for k in range(BrokerManagerGui.TRY_COUNT):
-            screenshot_1 = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
-            pyautogui.click(point.x, point.y, duration=0.1)
+            pyautogui.click(option.x, option.y, duration=0.1)
             time.sleep(3)
-            screenshot_2 = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+            screenshot_2 = pyautogui.screenshot(region=(option.x - 5, option.y - 5, option.x + 5, option.y + 5))
             if screenshot_1 != screenshot_2:
                 logger.debug('Check option button - True')
-                return
-            else:
-                logger.debug('Check option button attempt №{} - False'.format(k))
+                return True
+            logger.debug('Check option button attempt №{} - False'.format(k))
+        return False
 
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
@@ -127,37 +123,28 @@ class BrokerManagerGui(BrokerManagerInterface):
             return
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
-        self.click_option(self.option_buttons[option])
+        if not self.click_option(self.option_buttons[option]):
+            return
 
         for k in range(BrokerManagerGui.TRY_COUNT):
-            pyautogui.doubleClick(
-                self.config['fields']['investment_money']['x'],
-                self.config['fields']['investment_money']['y'],
-                duration=0.1
-            )
-            time.sleep(1)
-            pyautogui.write(str(summ), interval=0.25)
-            time.sleep(0.5)
-            if self.get_deal_summ() == str(summ):
+            self.set_field(self.config['fields']['investment_money'], summ)
+            if self.get_field(self.config['fields']['investment_money'], use_mouse=True) == str(summ):
                 logger.debug('Check deal summ - True')
                 break
-            else:
-                logger.debug('Check deal summ attempt №{} - False'.format(k))
+            logger.debug('Check deal summ attempt №{} - False'.format(k))
+            # при всех неудачных попытках ничего не делаем
+            if k == (BrokerManagerGui.TRY_COUNT - 1):
+                return
 
         for k in range(BrokerManagerGui.TRY_COUNT):
-            pyautogui.doubleClick(
-                self.config['fields']['expiration_time']['x'],
-                self.config['fields']['expiration_time']['y'],
-                duration=0.1
-            )
-            time.sleep(1)
-            pyautogui.write(str(deal_time), interval=0.25)
-            time.sleep(0.5)
-            if self.get_deal_time() == str(deal_time):
+            self.set_field(self.config['fields']['expiration_time'], deal_time)
+            if self.get_field(self.config['fields']['expiration_time']) == str(deal_time):
                 logger.debug('Check deal time - True')
                 break
-            else:
-                logger.debug('Check deal time attempt №{} - False'.format(k))
+            logger.debug('Check deal time attempt №{} - False'.format(k))
+            # при всех неудачных попытках ничего не делаем
+            if k == (BrokerManagerGui.TRY_COUNT - 1):
+                return
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True

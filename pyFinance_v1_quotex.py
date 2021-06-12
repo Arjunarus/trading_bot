@@ -8,7 +8,12 @@ import traceback
 
 from broker_manager_gui import BrokerManagerGui, BrokerManagerInterface
 
+# Cоздание и сохранение пути файла session.sav
 SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
+
+# Cоздание папки log
+if not os.path.isdir("log"):
+    os.mkdir("log")
 
 # Initial values
 step = 1
@@ -19,7 +24,7 @@ TIME_OFFSET = 1
 logger = logging.getLogger('pyFinance')
 logger.setLevel(logging.DEBUG)
 
-fh = logging.FileHandler(datetime.datetime.now().strftime('logging/%Y-%m-%d.log'), 'a', 'utf-8')
+fh = logging.FileHandler(os.path.join('log', datetime.datetime.now().strftime('%Y-%m-%d.log')), 'a', 'utf-8')
 formatter = logging.Formatter('%(asctime)s %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)
@@ -32,7 +37,7 @@ logger.addHandler(ch)
 
 # Prepare telethon logger
 telethon_logger = logging.getLogger('telethon')
-tfh = logging.FileHandler(datetime.datetime.now().strftime('logging/%Y-%m-%d_telethon.log'))
+tfh = logging.FileHandler(os.path.join('log', datetime.datetime.now().strftime('%Y-%m-%d_telethon.log')), 'a', 'utf-8')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 tfh.setFormatter(formatter)
 telethon_logger.setLevel(logging.DEBUG)
@@ -53,7 +58,7 @@ def load_state(save_file_path):
     global INIT_SUMM
 
     if not os.path.isfile(save_file_path):
-        logger.error("Save state {} is not exists".format(save_file_path))
+        logger.error("Save state {} is not exists\n".format(save_file_path))
         return
 
     with open(save_file_path, 'r') as sav:
@@ -111,8 +116,7 @@ def deal_result_process(result):
 def message_process(message_text, message_date, broker_manager):
     global step
 
-    logger.info('')
-    logger.info('Got message')
+    logger.info('\nGot message')
     logger.debug(message_text)
     logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
@@ -133,6 +137,7 @@ def message_process(message_text, message_date, broker_manager):
 
         summ = get_summ(step)
         logger.info('Сумма: {}'.format(summ))
+        logger.info('Колено: {}'.format(step))
 
         broker_manager.make_deal(option, prognosis, summ, deal_time)
 
@@ -152,9 +157,9 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-
+#🔊 СИГНАЛЫ №1 🔊
     @client.on(
-        events.NewMessage(chats='🔊 СИГНАЛЫ №1 🔊'))  # создает событие, срабатывающее при появлении нового сообщения
+        events.NewMessage(chats='tFinace'))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
         message_process(message['message'], message['date'], broker_manager)
