@@ -5,10 +5,11 @@ import pyautogui
 import pyperclip
 import pytz
 import time
-
 import geometry_2d
 import windows_manager
+import errors
 from broker_manager_interface import BrokerManagerInterface
+
 
 logger = logging.getLogger('pyFinance')
 
@@ -67,8 +68,8 @@ class BrokerManagerGui(BrokerManagerInterface):
 
     def set_field(self, field, value):
         pyautogui.doubleClick(
-            field['x'],
-            field['y'],
+            self.config['fields'][field]['x'],
+            self.config['fields'][field]['y'],
             duration=0.1
         )
         time.sleep(0.5)
@@ -79,23 +80,23 @@ class BrokerManagerGui(BrokerManagerInterface):
         pyperclip.copy("")  # <- Это предотвращает замену последней копии текущей копией null.
 
         pyautogui.doubleClick(
-            field['x'],
-            field['y'],
+            self.config['fields'][field]['x'],
+            self.config['fields'][field]['y'],
             duration=0.1
         )
         time.sleep(0.5)
 
         if use_mouse:
             pyautogui.rightClick(
-                field['x'],
-                field['y'],
+                self.config['fields'][field]['x'],
+                self.config['fields'][field]['y'],
                 duration=0.1
             )
             time.sleep(0.5)
 
             pyautogui.click(
-                field['x'] + self.config['context_menu']['copy']['x'],
-                field['y'] + self.config['context_menu']['copy']['y'],
+                self.config['fields'][field]['x'] + self.config['context_menu']['copy']['x'],
+                self.config['fields'][field]['y'] + self.config['context_menu']['copy']['y'],
                 duration=0.1
             )
         else:
@@ -124,27 +125,27 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         if not self.click_option(self.option_buttons[option]):
-            return
+            raise errors.ClickoptionError('invalid option selection')
 
         for k in range(BrokerManagerGui.TRY_COUNT):
-            self.set_field(self.config['fields']['investment_money'], summ)
-            if self.get_field(self.config['fields']['investment_money'], use_mouse=True) == str(summ):
+            self.set_field('investment_money', summ)
+            if self.get_field('investment_money', use_mouse=True) == str(summ):
                 logger.debug('Check deal summ - True')
                 break
             logger.debug('Check deal summ attempt №{} - False'.format(k))
             # при всех неудачных попытках ничего не делаем
             if k == (BrokerManagerGui.TRY_COUNT - 1):
-                return
+                raise errors.ValueSummError('invalid summ input')
 
         for k in range(BrokerManagerGui.TRY_COUNT):
-            self.set_field(self.config['fields']['expiration_time'], deal_time)
-            if self.get_field(self.config['fields']['expiration_time']) == str(deal_time):
+            self.set_field('expiration_time', deal_time)
+            if self.get_field('expiration_time') == str(deal_time):
                 logger.debug('Check deal time - True')
                 break
             logger.debug('Check deal time attempt №{} - False'.format(k))
             # при всех неудачных попытках ничего не делаем
             if k == (BrokerManagerGui.TRY_COUNT - 1):
-                return
+                raise errors.ValueTimeError('invalid time input')
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
