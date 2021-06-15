@@ -7,7 +7,6 @@ import pytz
 import time
 import geometry_2d
 import windows_manager
-import errors
 from broker_manager_interface import BrokerManagerInterface
 
 
@@ -58,7 +57,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         result = ''
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         for k in range(BrokerManagerGui.TRY_COUNT):
-            result = self.get_field(self.config['fields']['result'])
+            result = self.get_field('result')
             if result in ['LOSE', 'WIN']:
                 break
             time.sleep(5)
@@ -125,7 +124,7 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         if not self.click_option(self.option_buttons[option]):
-            raise errors.ClickoptionError('invalid option selection')
+            RuntimeError('Option selection error')
 
         for k in range(BrokerManagerGui.TRY_COUNT):
             self.set_field('investment_money', summ)
@@ -135,7 +134,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             logger.debug('Check deal summ attempt №{} - False'.format(k))
             # при всех неудачных попытках ничего не делаем
             if k == (BrokerManagerGui.TRY_COUNT - 1):
-                raise errors.ValueSummError('invalid summ input')
+                raise RuntimeError('Summ input error')
 
         for k in range(BrokerManagerGui.TRY_COUNT):
             self.set_field('expiration_time', deal_time)
@@ -145,7 +144,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             logger.debug('Check deal time attempt №{} - False'.format(k))
             # при всех неудачных попытках ничего не делаем
             if k == (BrokerManagerGui.TRY_COUNT - 1):
-                raise errors.ValueTimeError('invalid time input')
+                raise RuntimeError('Time input error')
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
