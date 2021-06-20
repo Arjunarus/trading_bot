@@ -10,6 +10,7 @@ import windows_manager
 from broker_manager_interface import BrokerManagerInterface
 
 logger = logging.getLogger('pyFinance')
+deal_time_gl = 0
 
 
 class BrokerManagerGui(BrokerManagerInterface):
@@ -118,6 +119,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         return pyperclip.paste()
 
     def try_set_field(self, field, value, use_mouse=False):
+        global deal_time_gl
+
         if use_mouse:
             self.set_field(field, value)
             if self.get_field(field, use_mouse=True) == str(value):
@@ -125,9 +128,10 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         # Если передали дату, узнаем время сделки
         if isinstance(value, datetime.datetime):
-            deal_time = self.get_deal_time(value)
-            self.set_field(field, deal_time)
-            if self.get_field(field) == str(deal_time):
+            deal_time_gl = self.get_deal_time(value)
+            print(deal_time_gl)
+            self.set_field(field, deal_time_gl)
+            if self.get_field(field) == str(deal_time_gl):
                 return True
 
         self.set_field(field, value)
@@ -160,6 +164,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         return False
 
     def make_deal(self, option, prognosis, summ, deal_time):
+
         if self.is_deal:
             logger.info('Deal is active now, skip new deal.\n')
             return
@@ -199,5 +204,5 @@ class BrokerManagerGui(BrokerManagerInterface):
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
 
-        finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
+        finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time_gl)
         self.scheduler.add_job(self._get_deal_result, 'date', run_date=finish_datetime)
