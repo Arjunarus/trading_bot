@@ -9,7 +9,6 @@ import geometry_2d
 import windows_manager
 from broker_manager_interface import BrokerManagerInterface
 
-
 logger = logging.getLogger('pyFinance')
 
 
@@ -56,6 +55,15 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         result = ''
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
+
+        # открываем графу сделок "открытые"
+        pyautogui.doubleClick(
+            self.config['buttons']['opened']['x'],
+            self.config['buttons']['opened']['y'],
+            duration=0.1
+        )
+        time.sleep(5)
+
         for k in range(BrokerManagerGui.TRY_COUNT):
             result = self.get_field('result')
             if result in ['LOSE', 'WIN']:
@@ -64,6 +72,10 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         # If result not in ['LOSE', 'WIN'] return as is
         self.result_handler(result)
+
+    def get_deal_time(self, finish_datetime):
+        deal_time = int((finish_datetime - datetime.datetime.now()).total_seconds() // 60)
+        return deal_time
 
     def set_field(self, field, value):
         pyautogui.doubleClick(
@@ -105,6 +117,36 @@ class BrokerManagerGui(BrokerManagerInterface):
         time.sleep(0.5)
         return pyperclip.paste()
 
+    def try_set_field(self, field, value, use_mouse=False):
+        if use_mouse:
+            self.set_field(field, value)
+            if self.get_field(field, use_mouse=True) == str(value):
+                return True
+
+        # Если передали дату, узнаем время сделки
+        if isinstance(value, datetime.datetime):
+            deal_time = self.get_deal_time(value)
+            self.set_field(field, deal_time)
+            if self.get_field(field) == str(deal_time):
+                return True
+
+        self.set_field(field, value)
+        if self.get_field(field) == str(value):
+            return True
+        return False
+
+    def repeater(self, tries, action, *args, **kvargs):
+        for k in range(tries):
+            if action(*args, **kvargs):
+                logger.debug('Check {} - True'.format(args[0]))
+                return
+            logger.debug('Check {} attempt №{} - False'.format(args[0], k))
+
+            # при всех неудачных попытках ничего не делаем
+            if not k < tries:
+                raise RuntimeError('Time input error')
+
+
     def click_option(self, option):
         screenshot_1 = pyautogui.screenshot(region=(option.x - 5, option.y - 5, option.x + 5, option.y + 5))
         for k in range(BrokerManagerGui.TRY_COUNT):
@@ -122,29 +164,37 @@ class BrokerManagerGui(BrokerManagerInterface):
             logger.info('Deal is active now, skip new deal.\n')
             return
 
+        finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
+
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
         if not self.click_option(self.option_buttons[option]):
-            RuntimeError('Option selection error')
+            raise RuntimeError('Option selection error')
 
-        for k in range(BrokerManagerGui.TRY_COUNT):
-            self.set_field('investment_money', summ)
-            if self.get_field('investment_money', use_mouse=True) == str(summ):
-                logger.debug('Check deal summ - True')
-                break
-            logger.debug('Check deal summ attempt №{} - False'.format(k))
-            # при всех неудачных попытках ничего не делаем
-            if k == (BrokerManagerGui.TRY_COUNT - 1):
-                raise RuntimeError('Summ input error')
+        self.repeater(BrokerManagerGui.TRY_COUNT, self.try_set_field, 'investment_money', summ, use_mouse=True)
+        self.repeater(BrokerManagerGui.TRY_COUNT, self.try_set_field, 'expiration_time', finish_datetime)
 
-        for k in range(BrokerManagerGui.TRY_COUNT):
-            self.set_field('expiration_time', deal_time)
-            if self.get_field('expiration_time') == str(deal_time):
-                logger.debug('Check deal time - True')
-                break
-            logger.debug('Check deal time attempt №{} - False'.format(k))
-            # при всех неудачных попытках ничего не делаем
-            if k == (BrokerManagerGui.TRY_COUNT - 1):
-                raise RuntimeError('Time input error')
+        # for k in range(BrokerManagerGui.TRY_COUNT):
+        #     self.set_field('investment_money', summ)
+        #     if self.get_field('investment_money', use_mouse=True) == str(summ):
+        #         logger.debug('Check deal summ - True')
+        #         break
+        #     logger.debug('Check deal summ attempt №{} - False'.format(k))
+        #
+        #     # при всех неудачных попытках ничего не делаем
+        #     if k == (BrokerManagerGui.TRY_COUNT - 1):
+        #         raise RuntimeError('Summ input error')
+        #
+        # for k in range(BrokerManagerGui.TRY_COUNT):
+        #     deal_time = self.get_deal_time(finish_datetime)
+        #     self.set_field('expiration_time', deal_time)
+        #     if self.get_field('expiration_time') == str(deal_time):
+        #         logger.debug('Check deal time - True')
+        #         break
+        #     logger.debug('Check deal time attempt №{} - False'.format(k))
+        #
+        #     # при всех неудачных попытках ничего не делаем
+        #     if k == (BrokerManagerGui.TRY_COUNT - 1):
+        #         raise RuntimeError('Time input error')
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True

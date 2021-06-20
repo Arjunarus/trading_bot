@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import traceback
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from broker_manager_gui import BrokerManagerGui, BrokerManagerInterface
 
@@ -18,7 +19,7 @@ if not os.path.isdir("log"):
 # Initial values
 step = 1
 INIT_SUMM = 50
-TIME_OFFSET = 1
+#TIME_OFFSET = 1
 
 # Prepare logger
 logger = logging.getLogger('pyFinance')
@@ -128,7 +129,7 @@ def message_process(message_text, message_date, broker_manager):
             return
 
         option, prognosis, deal_time = signal
-        deal_time -= TIME_OFFSET
+        #deal_time -= TIME_OFFSET
 
         logger.info('Получен сигнал: {opt} {prog} на {tm}'.format(
             opt=option,
@@ -158,9 +159,9 @@ def main():
 
     client = TelegramClient(number, api_id, api_hash)
     broker_manager = BrokerManagerGui(deal_result_process, config)
-
+#🔊 СИГНАЛЫ №1 🔊
     # создает событие, срабатывающее при появлении нового сообщения
-    @client.on(events.NewMessage(chats='🔊 СИГНАЛЫ №1 🔊'))
+    @client.on(events.NewMessage(chats='tFinace'))
     async def normal_handler(event):
         message = event.message.to_dict()
         message_process(message['message'], message['date'], broker_manager)
