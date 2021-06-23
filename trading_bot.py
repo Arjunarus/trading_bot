@@ -7,23 +7,52 @@ import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
-def parse_signal(signal_text):
+def parse_signal(signal_text, parser):
     signal_lines = signal_text.split('\n')
-    if len(signal_lines) < 2:
-        # Ожидаем как минимум 2 строки, иначе это не сигнал
+    # Check lines count
+    if len(signal_lines) < int(parser['lines']):
         return
 
-    option = signal_lines[0][:6]
-    pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
-    m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
+    m = re.match(parser['pattern'], signal_text.replace(' ', '').lower())
+    # Check pattern matching
     if m is None:
-        # Если вторая строка не соответствует шаблону, значит это не сигнал
         return
 
-    prognosis = m.group(1)
-    deal_time_str = m.group(2)
-    deal_time = datetime.datetime.strptime(deal_time_str, '%H.%M').time()
-    return option, prognosis, deal_time
+    option = m.group(parser['option_index']).upper()
+    prognosis = m.group(parser['prognosis_index'])
+    hours_idx = parser['hours_index']
+    deal_hour = 0
+    if hours_idx is not None:
+        deal_hour = int(m.group(hours_idx))
+    deal_minutes = int(m.group(parser['minutes_index']))
+    signal_time = datetime.time(hour=deal_hour, minute=deal_minutes)
+    return option, prognosis, signal_time
+
+
+def get_finish_time(signal_time, signal_type):
+    if signal_type == 'classic':
+        msk_tz = pytz.timezone('Europe/Moscow')
+        now_date = datetime.datetime.now(msk_tz)
+        signal_time = msk_tz.localize(
+            datetime.datetime(
+                now_date.year,
+                now_date.month,
+                now_date.day,
+                signal_time.hour,
+                signal_time.minutes
+            )
+        )
+        if signal_time.hour in [0, 1]:
+            signal_time += datetime.timedelta(days=1)
+        finish_time = signal_time.astimezone()
+
+    elif signal_type == 'sprint':
+        finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minutes)
+
+    else:
+        raise ValueError('Unknown signal type: {}'.format(signal_type))
+
+    return finish_time
 
 
 def get_summ(init_sum, step):
@@ -35,12 +64,14 @@ class TradingBot:
             self,
             init_summ,
             step,
+            signal_bot_descriptor,
             broker_manager,
             logger,
             save_state_file_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav'),
     ):
         self.init_summ = init_summ
         self.step = step
+        self.signal_bot_descriptor = signal_bot_descriptor
         self.broker_manager = broker_manager
         self.logger = logger
         self.save_state_file_path = save_state_file_path
@@ -74,6 +105,12 @@ class TradingBot:
         self.is_deal = True
 
     def finish_deal(self):
+        self.is_deal = False
+
+        if not self.signal_bot_descriptor['martingale']:
+            # Если нет мартингейла то ниче не надо делать
+            return
+
         result = self.broker_manager.get_deal_result()
 
         self.logger.info('Got result: %s', result)
@@ -84,7 +121,6 @@ class TradingBot:
         else:
             self.logger.error('Unknown result: {}'.format(result))
 
-        self.is_deal = False
         self.save_state()
 
     def message_process(self, message_text, message_date):
@@ -94,16 +130,16 @@ class TradingBot:
         self.logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
         try:
-            signal = parse_signal(message_text)
+            signal = parse_signal(message_text, self.signal_bot_descriptor['parser'])
             if signal is None:
                 self.logger.info('Message is not a signal, skip.')
                 return
 
-            option, prognosis, deal_time = signal
-            self.logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
+            option, prognosis, signal_time = signal
+            self.logger.info('Получен сигнал: {opt} {prog} время {tm}'.format(
                 opt=option,
                 prog=prognosis,
-                tm=deal_time.strftime('%H.%M')
+                tm=signal_time.strftime('%H.%M')
             ))
 
             if option not in self.broker_manager.OPTION_LIST:
@@ -114,27 +150,11 @@ class TradingBot:
                 self.logger.info('Deal is not finished yet, skip new signal.')
                 return
 
-            self.start_deal(option, prognosis, deal_time)
+            finish_time = get_finish_time(signal_time, self.signal_bot_descriptor['type'])
+            self.start_deal(option, prognosis, finish_time)
 
             # Set up timer on finish job
-            msk_tz = pytz.timezone('Europe/Moscow')
-            now_date = datetime.datetime.now(msk_tz)
-            finish_datetime = msk_tz.localize(
-                datetime.datetime(
-                    now_date.year,
-                    now_date.month,
-                    now_date.day,
-                    deal_time.hour,
-                    deal_time.minute
-                )
-            )
-            if deal_time.hour in [0, 1]:
-                finish_datetime += datetime.timedelta(days=1)
-            finish_datetime = finish_datetime.astimezone()
-
-            self.logger.debug("finish_datetime={}".format(finish_datetime))
-
-            self.scheduler.add_job(self.finish_deal, 'date', run_date=finish_datetime)
+            self.scheduler.add_job(self.finish_deal, 'date', run_date=finish_time)
 
         except Exception as err:
             self.logger.error("Ошибка: {}\n".format(err))

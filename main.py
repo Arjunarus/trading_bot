@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -42,12 +43,22 @@ def main():
     number, api_id, api_hash, bot_descriptor_name, *rest = sys.argv[1:]
 
     config = rest[0] if len(rest) > 0 else 'broker_manager_gui_nick_config.json'
-    t_bot = trading_bot.TradingBot(init_summ=50, step=1, broker_manager=BrokerManagerGui(config_file=config), logger=logger)
+    with open(BOT_DESCRIPTORS_FILE_PATH, 'r') as desc:
+        json_content = json.load(desc)
+        signal_bot_descriptor = json_content[bot_descriptor_name]
+
+    t_bot = trading_bot.TradingBot(
+        init_summ=50,
+        step=1,
+        signal_bot_descriptor=signal_bot_descriptor,
+        broker_manager=BrokerManagerGui(config_file=config),
+        logger=logger
+    )
     t_bot.load_state()
 
     client = TelegramClient(number, api_id, api_hash)
 
-    @client.on(events.NewMessage(chats='Scrooge Club'))  # создает событие, срабатывающее при появлении нового сообщения
+    @client.on(events.NewMessage(chats=signal_bot_descriptor['name']))  # создает событие, срабатывающее при появлении нового сообщения
     async def normal_handler(event):
         message = event.message.to_dict()
         t_bot.message_process(message['message'], message['date'])
