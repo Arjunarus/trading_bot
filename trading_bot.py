@@ -14,7 +14,7 @@ def parse_signal(signal_text, parser):
         return
 
     m = re.match(parser['pattern'], signal_text.replace(' ', '').lower())
-    # Check pattern matching
+    # Check if pattern matching
     if m is None:
         return
 
@@ -31,6 +31,7 @@ def parse_signal(signal_text, parser):
 
 def get_finish_time(signal_time, signal_type):
     if signal_type == 'classic':
+        # Классические сигналы для мск пояса
         msk_tz = pytz.timezone('Europe/Moscow')
         now_date = datetime.datetime.now(msk_tz)
         signal_time = msk_tz.localize(
@@ -39,7 +40,7 @@ def get_finish_time(signal_time, signal_type):
                 now_date.month,
                 now_date.day,
                 signal_time.hour,
-                signal_time.minutes
+                signal_time.minute
             )
         )
         if signal_time.hour in [0, 1]:
@@ -47,7 +48,7 @@ def get_finish_time(signal_time, signal_type):
         finish_time = signal_time.astimezone()
 
     elif signal_type == 'sprint':
-        finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minutes)
+        finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minute)
 
     else:
         raise ValueError('Unknown signal type: {}'.format(signal_type))

@@ -118,3 +118,22 @@ class TradingBotTest(unittest.TestCase):
         ]), self.descriptor_1['parser'])
         r_signal = ('BLABLA', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
+
+    def test_get_finish_time(self):
+        signal_time = datetime.time(hour=0, minute=27)
+
+        finish_time = trading_bot.get_finish_time(signal_time, 'classic')
+        now = datetime.datetime.now()
+        day = (now + datetime.timedelta(days=1)).day
+        self.assertEqual(finish_time.day, day)
+        # TODO test hours
+        self.assertEqual(finish_time.minute, 27)
+
+        finish_time = trading_bot.get_finish_time(signal_time, 'sprint')
+        r_time = datetime.datetime.now() + datetime.timedelta(minutes=27)
+        self.assertTupleEqual(
+            (finish_time.year, finish_time.month, finish_time.day, finish_time.hour, finish_time.minute),
+            (r_time.year, r_time.month, r_time.day, r_time.hour, r_time.minute)
+        )
+
+
