@@ -99,11 +99,11 @@ class TradingBot:
         self.logger.debug('step = {}'.format(self.step))
         self.logger.debug('init_summ = {}'.format(self.init_summ))
 
-    def start_deal(self, option, prognosis, deal_time):
+    def start_deal(self, option, prognosis, finish_time):
         summ = get_summ(self.init_summ, self.step)
         self.logger.info('Сумма: {}'.format(summ))
-        self.broker_manager.make_deal(option, prognosis, summ, deal_time)
         self.is_deal = True
+        return self.broker_manager.make_deal(option, prognosis, summ, finish_time)
 
     def finish_deal(self):
         self.is_deal = False
@@ -152,10 +152,10 @@ class TradingBot:
                 return
 
             finish_time = get_finish_time(signal_time, self.signal_bot_descriptor['type'])
-            self.start_deal(option, prognosis, finish_time)
+            real_finish_time = self.start_deal(option, prognosis, finish_time)
 
             # Set up timer on finish job
-            self.scheduler.add_job(self.finish_deal, 'date', run_date=finish_time)
+            self.scheduler.add_job(self.finish_deal, 'date', run_date=real_finish_time)
 
         except Exception as err:
             self.logger.error("Ошибка: {}\n".format(err))
