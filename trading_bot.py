@@ -34,7 +34,7 @@ def get_finish_time(signal_time, signal_type):
         # Классические сигналы для мск пояса
         msk_tz = pytz.timezone('Europe/Moscow')
         now_date = datetime.datetime.now(msk_tz)
-        signal_time = msk_tz.localize(
+        finish_time = msk_tz.localize(
             datetime.datetime(
                 now_date.year,
                 now_date.month,
@@ -44,8 +44,8 @@ def get_finish_time(signal_time, signal_type):
             )
         )
         if signal_time.hour in [0, 1]:
-            signal_time += datetime.timedelta(days=1)
-        finish_time = signal_time.astimezone()
+            finish_time += datetime.timedelta(days=1)
+        finish_time = finish_time.astimezone()
 
     elif signal_type == 'sprint':
         finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minute)
