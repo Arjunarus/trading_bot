@@ -22,7 +22,7 @@ def repeater(action, *args, **kvargs):
         logger.debug('Check {} - False'.format(action.__name__))
 
     # при всех неудачных попытках кидаем исключение об ошибке
-    raise RuntimeError('{} setting error'.format(args[0]))
+    raise RuntimeError('{} setting error'.format(action.__name__))
 
 
 class BrokerManagerGui(BrokerManagerInterface):
@@ -35,25 +35,6 @@ class BrokerManagerGui(BrokerManagerInterface):
             self.config = json.load(cf)
 
         self.interval_deal_time = None
-
-        # Устанавливаем начальный опцион
-        self.prev_option = None
-        try:
-            self.click_option('EURUSD')
-        except:
-            pass
-
-        self.exp_hour_buttons = geometry_2d.get_matrix(
-            m_size=geometry_2d.Vector(x=6, y=4),
-            start=geometry_2d.Vector(**self.config['buttons']['expiration_time']['first_hour']),
-            delta=geometry_2d.Vector(**self.config['buttons']['expiration_time']['delta'])
-        )
-
-        self.exp_minute_buttons = geometry_2d.get_matrix(
-            m_size=geometry_2d.Vector(x=3, y=4),
-            start=geometry_2d.Vector(**self.config['buttons']['expiration_time']['first_minute']),
-            delta=geometry_2d.Vector(**self.config['buttons']['expiration_time']['delta'])
-        )
 
         self.option_buttons = dict(zip(
             BrokerManagerInterface.OPTION_LIST,
@@ -71,6 +52,12 @@ class BrokerManagerGui(BrokerManagerInterface):
                 geometry_2d.Vector(**self.config['buttons']['prognosis']['put'])
             ]
         ))
+
+        # Устанавливаем начальный опцион
+        self.prev_option = None
+        self.click_option('EURUSD')
+
+        self.option_buttons['CADCHF'] = self.option_buttons['CADJPY']
 
     def _get_deal_result(self):
         self.is_deal = False
@@ -94,10 +81,6 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         # If result not in ['LOSE', 'WIN'] return as is
         self.result_handler(result)
-
-    def get_deal_time(self, finish_datetime):
-        deal_time = int((finish_datetime - datetime.datetime.now()).total_seconds() // 60)
-        return deal_time
 
     def set_field(self, field, value):
         pyautogui.doubleClick(
@@ -147,30 +130,34 @@ class BrokerManagerGui(BrokerManagerInterface):
         self.interval_deal_time = int((finish_datetime - datetime.datetime.now()).total_seconds() // 60)
         return self.try_set_field('expiration_time', self.interval_deal_time)
 
-    def click_option(self, option, screenshot):
+    def click_option(self, option):
+        def click_option_button(point, screenshot):
+            pyautogui.click(point.x, point.y, duration=0.1)
+            time.sleep(3)
+            screenshot_new = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+            if screenshot == screenshot_new:
+                return False
+            self.prev_option = option
+            return True
+
         if self.prev_option == option:
             return True
-        self.prev_option = option
 
-        pyautogui.click(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
-        time.sleep(3)
         point = self.option_buttons[option]
-        screenshot_new = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
-        return screenshot == screenshot_new
+        screenshot = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+
+        repeater(click_option_button, point, screenshot)
 
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
             logger.info('Deal is active now, skip new deal.\n')
             return
 
-        point = self.option_buttons[option]
-        screenshot = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
+        windows_manager.activate_window('Прозрачный брокер бинарных опционов')
 
         finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
 
-        windows_manager.activate_window('Прозрачный брокер бинарных опционов')
-
-        repeater(self.click_option, option, screenshot)
+        self.click_option(option)
         repeater(self.try_set_field, 'investment_money', summ, use_mouse=True)
         repeater(self.set_expiration_time, finish_datetime)
 
