@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import pytz
 import unittest
 
 import trading_bot
@@ -120,17 +121,31 @@ class TradingBotTest(unittest.TestCase):
         self.assertTupleEqual(signal, r_signal)
 
     def test_get_finish_time(self):
+
         signal_time = datetime.time(hour=0, minute=27)
 
         finish_time = trading_bot.get_finish_time(signal_time, 'classic')
-        now = datetime.datetime.now()
-        day = (now + datetime.timedelta(days=1)).day
-        self.assertEqual(finish_time.day, day)
-        # TODO test hours
-        self.assertEqual(finish_time.minute, 27)
+        msk_tz = pytz.timezone('Europe/Moscow')
+        finish_time_msk = finish_time.astimezone(msk_tz)
 
+        now = datetime.datetime.now(msk_tz)
+        next_day = (now + datetime.timedelta(days=1)).day
+
+        self.assertTrue(finish_time_msk.day in [now.day, next_day])
+        self.assertEqual(finish_time_msk.hour, 0)
+        self.assertEqual(finish_time_msk.minute, 27)
+
+        signal_time = datetime.time(hour=0, minute=27)
         finish_time = trading_bot.get_finish_time(signal_time, 'sprint')
         r_time = datetime.datetime.now() + datetime.timedelta(minutes=27)
+        self.assertTupleEqual(
+            (finish_time.year, finish_time.month, finish_time.day, finish_time.hour, finish_time.minute),
+            (r_time.year, r_time.month, r_time.day, r_time.hour, r_time.minute)
+        )
+
+        signal_time = datetime.time(hour=1, minute=2)
+        finish_time = trading_bot.get_finish_time(signal_time, 'sprint')
+        r_time = datetime.datetime.now() + datetime.timedelta(hours=1, minutes=2)
         self.assertTupleEqual(
             (finish_time.year, finish_time.month, finish_time.day, finish_time.hour, finish_time.minute),
             (r_time.year, r_time.month, r_time.day, r_time.hour, r_time.minute)

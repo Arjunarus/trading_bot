@@ -43,7 +43,7 @@ def get_finish_time(signal_time, signal_type):
                 signal_time.minute
             )
         )
-        if signal_time.hour in [0, 1]:
+        if now_date > finish_time:
             finish_time += datetime.timedelta(days=1)
         finish_time = finish_time.astimezone()
 
