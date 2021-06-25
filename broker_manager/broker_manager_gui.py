@@ -15,7 +15,7 @@ logger = logging.getLogger('pyFinance')
 
 
 class BrokerManagerGui(BrokerManagerInterface):
-    TRY_COUNT = 3
+    TRY_COUNT = 5
 
     def __init__(self, config_file):
         with open(os.path.join(os.path.dirname(__file__), config_file), 'r') as cf:
@@ -29,6 +29,7 @@ class BrokerManagerGui(BrokerManagerInterface):
                 delta=geometry_2d.Vector(**self.config['buttons']['option']['delta'])
             )
         ))
+        self.option_buttons['CADCHF'] = self.option_buttons['CADJPY']
 
         self.prognosis_table = dict(zip(
             BrokerManagerInterface.PROGNOSIS_LIST,
@@ -95,8 +96,11 @@ class BrokerManagerGui(BrokerManagerInterface):
         raise RuntimeError('Can not select option {}'.format(option))
 
     def get_deal_result(self):
-        result = ''
         windows_manager.activate_window('Прозрачный брокер бинарных опционов')
+        pyautogui.doubleClick(**self.config['buttons']['opened'], duration=0.1)
+        time.sleep(5)
+
+        result = ''
         for k in range(BrokerManagerGui.TRY_COUNT):
             result = self.__get_field('result')
             if result in ['LOSE', 'WIN']:
@@ -121,19 +125,19 @@ class BrokerManagerGui(BrokerManagerInterface):
         if real_summ != summ:
             raise RuntimeError('Error setting up summ')
 
-        real_finish_time = None
+        interval = None
+        real_interval = None
         for k in range(self.TRY_COUNT):
-            now = datetime.datetime.now()
-            interval = int((finish_time - now).total_seconds / 60)
+            interval = int((finish_time - datetime.datetime.now()).total_seconds / 60)
             self.__set_field('expiration_time', interval)
             real_interval = self.__get_field('expiration_time')
             if real_interval == interval:
-                real_finish_time = now + datetime.timedelta(minutes=interval)
                 break
 
-        if real_finish_time is None:
-            raise RuntimeError('Error setting up expiration time')
+        if real_interval != interval:
+            raise RuntimeError('Error setting up expiration time interval')
 
         time.sleep(2)
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
+        real_finish_time = datetime.datetime.now() + datetime.timedelta(minutes=interval)
         return real_finish_time

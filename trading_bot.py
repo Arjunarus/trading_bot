@@ -88,7 +88,7 @@ class TradingBot:
 
     def load_state(self):
         if not os.path.isfile(self.save_state_file_path):
-            self.logger.error("Save state {} is not exists".format(self.save_state_file_path))
+            self.logger.error("Saved state {} is not exists".format(self.save_state_file_path))
             return
 
         with open(self.save_state_file_path, 'r') as sav:
@@ -102,6 +102,7 @@ class TradingBot:
     def start_deal(self, option, prognosis, finish_time):
         summ = get_summ(self.init_summ, self.step)
         self.logger.info('Сумма: {}'.format(summ))
+        self.logger.info('Колено: {}'.format(self.step))
         self.is_deal = True
         return self.broker_manager.make_deal(option, prognosis, summ, finish_time)
 
@@ -109,7 +110,7 @@ class TradingBot:
         self.is_deal = False
 
         if not self.signal_bot_descriptor['martingale']:
-            # Если нет мартингейла то ниче не надо делать
+            # Если нет мартингейла то ничего не надо делать
             return
 
         result = self.broker_manager.get_deal_result()
@@ -125,7 +126,7 @@ class TradingBot:
         self.save_state()
 
     def message_process(self, message_text, message_date):
-        self.logger.info('')
+        self.logger.info('-------------------------------------------------------------------')
         self.logger.info('Got message')
         self.logger.debug(message_text)
         self.logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
@@ -133,25 +134,25 @@ class TradingBot:
         try:
             signal = parse_signal(message_text, self.signal_bot_descriptor['parser'])
             if signal is None:
-                self.logger.info('Message is not a signal, skip.')
+                self.logger.info('Message is not a signal, skip.\n')
                 return
 
             option, prognosis, signal_time = signal
-            self.logger.info('Получен сигнал: {opt} {prog} время {tm}'.format(
+            finish_time = get_finish_time(signal_time, self.signal_bot_descriptor['type'])
+            self.logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
                 opt=option,
                 prog=prognosis,
-                tm=signal_time.strftime('%H.%M')
+                tm=finish_time.strftime('%H.%M')
             ))
 
             if option not in self.broker_manager.OPTION_LIST:
-                self.logger.info('Unknown option {}, skip.'.format(option))
+                self.logger.info('Unknown option {}, skip.\n'.format(option))
                 return
 
             if self.is_deal:
-                self.logger.info('Deal is not finished yet, skip new signal.')
+                self.logger.info('Deal is not finished yet, skip new signal.\n')
                 return
 
-            finish_time = get_finish_time(signal_time, self.signal_bot_descriptor['type'])
             real_finish_time = self.start_deal(option, prognosis, finish_time)
 
             # Set up timer on finish job
