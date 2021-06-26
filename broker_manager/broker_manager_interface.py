@@ -8,9 +8,9 @@ class BrokerManagerInterface:
 
     def get_deal_result(self):
         """
-        Вызывается по таймеру, получает результат сделки и передает его в result_handler
+        Получает результат сделки
         """
-        raise NotImplemented('Trying to execute abstract method _get_deal_result')
+        raise NotImplemented('Trying to execute abstract method get_deal_result')
 
     def make_deal(self, option, prognosis, summ, deal_time):
         """
