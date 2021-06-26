@@ -3,7 +3,6 @@ import json
 import logging
 import pyautogui
 import pyperclip
-import pytz
 import time
 
 import geometry_2d
@@ -13,16 +12,18 @@ from broker_manager_interface import BrokerManagerInterface
 logger = logging.getLogger('pyFinance')
 
 
-def repeater(action, *args, **kvargs):
-    tries = 5
-    for k in range(tries):
-        if action(*args, **kvargs):
-            logger.debug('Check {} - True'.format(action.__name__))
-            return
-        logger.debug('Check {} - False'.format(action.__name__))
+def repeater(action):
+    def repeat_action(*args, **kvargs):
+        tries = 5
+        for k in range(tries):
+            if action(*args, **kvargs):
+                logger.debug('Check {} - True'.format(action.__name__))
+                return
+            logger.debug('Check {} - False'.format(action.__name__))
 
     # при всех неудачных попытках кидаем исключение об ошибке
     raise RuntimeError('{} setting error'.format(action.__name__))
+    return repeat_action
 
 
 class BrokerManagerGui(BrokerManagerInterface):
@@ -54,9 +55,11 @@ class BrokerManagerGui(BrokerManagerInterface):
         ))
 
         # Устанавливаем начальный опцион
-        self.prev_option = None
-        self.click_option('EURUSD')
-
+        self.current_option = None
+        try:
+            self.click_option('EURUSD')
+        except:
+            pass
         self.option_buttons['CADCHF'] = self.option_buttons['CADJPY']
 
     def _get_deal_result(self):
@@ -137,11 +140,11 @@ class BrokerManagerGui(BrokerManagerInterface):
             screenshot_new = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
             if screenshot == screenshot_new:
                 return False
-            self.prev_option = option
+            self.current_option = option
             return True
 
-        if self.prev_option == option:
-            return True
+        if self.current_option == option:
+            return
 
         point = self.option_buttons[option]
         screenshot = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
