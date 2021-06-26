@@ -24,9 +24,9 @@ class BrokerManagerGui(BrokerManagerInterface):
         self.option_buttons = dict(zip(
             BrokerManagerInterface.OPTION_LIST,
             geometry_2d.get_matrix(
-                m_size=geometry_2d.Vector(x=11, y=2),
-                start=geometry_2d.Vector(**self.config['buttons']['option']['first']),
-                delta=geometry_2d.Vector(**self.config['buttons']['option']['delta'])
+                m_size={'x': 11, 'y': 2},
+                start=self.config['buttons']['option']['first'],
+                delta=self.config['buttons']['option']['delta']
             )
         ))
         self.option_buttons['CADCHF'] = self.option_buttons['CADJPY']
@@ -34,15 +34,15 @@ class BrokerManagerGui(BrokerManagerInterface):
         self.prognosis_table = dict(zip(
             BrokerManagerInterface.PROGNOSIS_LIST,
             [
-                geometry_2d.Vector(**self.config['buttons']['prognosis']['call']),
-                geometry_2d.Vector(**self.config['buttons']['prognosis']['put'])
+                self.config['buttons']['prognosis']['call'],
+                self.config['buttons']['prognosis']['put']
             ]
         ))
 
         self.current_option = None
         try:
             self.__select_option('EURUSD')
-        except:
+        except RuntimeError:
             pass
 
     def __set_field(self, field, value):
@@ -74,15 +74,15 @@ class BrokerManagerGui(BrokerManagerInterface):
             return True
 
         screenshot_region = (
-            self.option_buttons[option].x - 5,
-            self.option_buttons[option].y - 5,
-            self.option_buttons[option].x + 5,
-            self.option_buttons[option].y + 5
+            self.option_buttons[option]['x'] - 5,
+            self.option_buttons[option]['y'] - 5,
+            self.option_buttons[option]['x'] + 5,
+            self.option_buttons[option]['y'] + 5
         )
 
         screenshot_1 = pyautogui.screenshot(region=screenshot_region)
         for k in range(BrokerManagerGui.TRY_COUNT):
-            pyautogui.leftClick(self.option_buttons[option].x, self.option_buttons[option].y, duration=0.1)
+            pyautogui.leftClick(**self.option_buttons[option], duration=0.1)
             time.sleep(3)
 
             screenshot_2 = pyautogui.screenshot(region=screenshot_region)
@@ -138,6 +138,6 @@ class BrokerManagerGui(BrokerManagerInterface):
             raise RuntimeError('Error setting up expiration time interval')
 
         time.sleep(2)
-        pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
+        pyautogui.click(**self.prognosis_table[prognosis], duration=0.1)
         real_finish_time = datetime.datetime.now() + datetime.timedelta(minutes=interval)
         return real_finish_time
