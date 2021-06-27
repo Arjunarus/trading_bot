@@ -20,9 +20,8 @@ def repeater(action):
                 logger.debug('Check {} - True'.format(action.__name__))
                 return
             logger.debug('Check {} - False'.format(action.__name__))
-
-    # при всех неудачных попытках кидаем исключение об ошибке
-    raise RuntimeError('{} setting error'.format(action.__name__))
+        # при всех неудачных попытках кидаем исключение об ошибке
+        raise RuntimeError('{} setting error'.format(action.__name__))
     return repeat_action
 
 
@@ -149,7 +148,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         point = self.option_buttons[option]
         screenshot = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
 
-        repeater(click_option_button, point, screenshot)
+        repeater(click_option_button)(point, screenshot)
+
 
     def make_deal(self, option, prognosis, summ, deal_time):
         if self.is_deal:
@@ -161,8 +161,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
 
         self.click_option(option)
-        repeater(self.try_set_field, 'investment_money', summ, use_mouse=True)
-        repeater(self.set_expiration_time, finish_datetime)
+        repeater(self.try_set_field)('investment_money', summ, use_mouse=True)
+        repeater(self.set_expiration_time)(finish_datetime)
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
