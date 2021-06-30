@@ -9,7 +9,7 @@ import time
 
 import geometry_2d
 import windows_manager
-from broker_manager_interface import BrokerManagerInterface
+from broker_manager.broker_manager_interface import BrokerManagerInterface
 
 logger = logging.getLogger('pyFinance')
 
@@ -41,6 +41,7 @@ class BrokerManagerGui(BrokerManagerInterface):
 
         self.current_option = None
         try:
+            windows_manager.activate_window('Прозрачный брокер бинарных опционов')
             self.__select_option('EURUSD')
         except RuntimeError:
             pass

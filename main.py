@@ -48,7 +48,7 @@ def main():
 
     config = rest[0] if len(rest) > 0 else DEFAULT_BROKER_MANAGER_GUI_CONFIG
     bot_descriptors_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), BOT_DESCRIPTORS_FILE_NAME)
-    with open(bot_descriptors_file_path, 'r') as desc:
+    with open(bot_descriptors_file_path, 'r', encoding='utf-8') as desc:
         json_content = json.load(desc)
         signal_bot_descriptor = json_content[bot_descriptor_name]
 
