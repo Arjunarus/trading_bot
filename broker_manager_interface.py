@@ -5,7 +5,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 class BrokerManagerInterface:
     OPTION_LIST = (
         'AUDCAD', 'AUDJPY', 'AUDUSD', 'EURAUD', 'EURCHF', 'EURJPY', 'GBPAUD', 'GBPJPY', 'NZDJPY', 'USDCAD', 'USDJPY',
-        'AUDCHF', 'AUDNZD', 'CADJPY', 'EURCAD', 'EURGBP', 'EURUSD', 'GBPCHF', 'GBPNZD', 'NZDUSD', 'USDCHF'
+        'AUDCHF', 'AUDNZD', 'CADJPY', 'EURCAD', 'EURGBP', 'EURUSD', 'GBPCHF', 'GBPNZD', 'NZDUSD', 'USDCHF', 'CADCHF'
     )
     PROGNOSIS_LIST = ('вверх', 'вниз')
 
