@@ -59,6 +59,7 @@ class BrokerManagerGui(BrokerManagerInterface):
             self.click_option('EURUSD')
         except:
             pass
+
         self.option_buttons['CADCHF'] = self.option_buttons['CADJPY']
 
     def _get_deal_result(self):
@@ -124,15 +125,19 @@ class BrokerManagerGui(BrokerManagerInterface):
         time.sleep(0.5)
         return pyperclip.paste()
 
+    @repeater
     def try_set_field(self, field, value, use_mouse=False):
         self.set_field(field, value)
         return self.get_field(field, use_mouse) == str(value)
 
+    @repeater
     def set_expiration_time(self, finish_datetime):
         self.interval_deal_time = int((finish_datetime - datetime.datetime.now()).total_seconds() // 60)
-        return self.try_set_field('expiration_time', self.interval_deal_time)
+        self.set_field('expiration_time', self.interval_deal_time)
+        return self.get_field('expiration_time') == str(self.interval_deal_time)
 
     def click_option(self, option):
+        @repeater
         def click_option_button(point, screenshot):
             pyautogui.click(point.x, point.y, duration=0.1)
             time.sleep(3)
@@ -148,7 +153,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         point = self.option_buttons[option]
         screenshot = pyautogui.screenshot(region=(point.x - 5, point.y - 5, point.x + 5, point.y + 5))
 
-        repeater(click_option_button)(point, screenshot)
+        click_option_button(point, screenshot)
 
 
     def make_deal(self, option, prognosis, summ, deal_time):
@@ -161,8 +166,8 @@ class BrokerManagerGui(BrokerManagerInterface):
         finish_datetime = datetime.datetime.now() + datetime.timedelta(minutes=deal_time)
 
         self.click_option(option)
-        repeater(self.try_set_field)('investment_money', summ, use_mouse=True)
-        repeater(self.set_expiration_time)(finish_datetime)
+        self.try_set_field('investment_money', summ, use_mouse=True)
+        self.set_expiration_time(finish_datetime)
 
         pyautogui.click(self.prognosis_table[prognosis].x, self.prognosis_table[prognosis].y, duration=0.1)
         self.is_deal = True
