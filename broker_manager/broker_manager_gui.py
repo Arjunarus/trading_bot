@@ -119,7 +119,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         real_summ = None
         for k in range(self.TRY_COUNT):
             self.__set_field('investment_money', summ)
-            real_summ = self.__get_field('investment_money')
+            real_summ = int(self.__get_field('investment_money'))
             if real_summ == summ:
                 break
 
@@ -131,7 +131,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         for k in range(self.TRY_COUNT):
             interval = int((finish_time - datetime.datetime.now()).total_seconds / 60)
             self.__set_field('expiration_time', interval)
-            real_interval = self.__get_field('expiration_time')
+            real_interval = int(self.__get_field('expiration_time'))
             if real_interval == interval:
                 break
 
