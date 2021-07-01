@@ -119,11 +119,11 @@ class BrokerManagerGui(BrokerManagerInterface):
         real_summ = None
         for k in range(self.TRY_COUNT):
             self.__set_field('investment_money', summ)
-            real_summ = int(self.__get_field('investment_money'))
-            if real_summ == summ:
+            real_summ = self.__get_field('investment_money')
+            if real_summ == str(summ):
                 break
 
-        if real_summ != summ:
+        if real_summ != str(summ):
             raise RuntimeError('Error setting up summ')
 
         interval = None
@@ -131,11 +131,11 @@ class BrokerManagerGui(BrokerManagerInterface):
         for k in range(self.TRY_COUNT):
             interval = int((finish_time - datetime.datetime.now()).total_seconds / 60)
             self.__set_field('expiration_time', interval)
-            real_interval = int(self.__get_field('expiration_time'))
-            if real_interval == interval:
+            real_interval = self.__get_field('expiration_time')
+            if real_interval == str(interval):
                 break
 
-        if real_interval != interval:
+        if real_interval != str(interval):
             raise RuntimeError('Error setting up expiration time interval')
 
         time.sleep(2)
