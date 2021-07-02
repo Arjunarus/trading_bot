@@ -129,7 +129,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         interval = None
         real_interval = None
         for k in range(self.TRY_COUNT):
-            interval = int((finish_time - datetime.datetime.now()).total_seconds / 60)
+            interval = int((finish_time - datetime.datetime.now()).total_seconds() / 60)
             self.__set_field('expiration_time', interval)
             real_interval = self.__get_field('expiration_time')
             if real_interval == str(interval):
