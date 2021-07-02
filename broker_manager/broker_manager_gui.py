@@ -61,7 +61,7 @@ class BrokerManagerGui(BrokerManagerInterface):
         if use_mouse:
             pyautogui.rightClick(**self.config['fields'][field], duration=0.1)
             time.sleep(0.5)
-            pyautogui.moveRel(**self.config['context_menu']['copy'], duration=0.1)
+            pyautogui.moveRel(*self.config['context_menu']['copy'].values(), duration=0.1)
             pyautogui.leftClick()
         else:
             # ctrl-c обычно работает очень быстро, но ваша программа может выполняться быстрее
