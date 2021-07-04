@@ -1,0 +1,43 @@
+{
+    "scrudge": {
+        "name": "Scrooge Club",
+        "martingale": true,
+        "type": "classic",
+        "parser": {
+            "lines": 2,
+            "pattern": "([a-z]{6})\n(вверх|вниз)до(\\d{2}).(\\d{2})мск",
+            "option_index": 1,
+            "prognosis_index": 2,
+            "hours_index": 3,
+            "minutes_index": 4
+        }
+    },
+
+    "signal_1_and_martingale": {
+        "name": "\uD83D\uDD0A СИГНАЛЫ №1 \uD83D\uDD0A",
+        "martingale": true,
+        "type": "sprint",
+        "parser": {
+            "lines": 1,
+            "pattern": "([a-z]{6})(вверх|вниз)на(\\d+)[\\S\\D]*",
+            "option_index": 1,
+            "prognosis_index": 2,
+            "hours_index": null,
+            "minutes_index": 3
+        }
+    },
+
+    "signal_1_no_martingale": {
+        "name": "\uD83D\uDD0A СИГНАЛЫ №1 \uD83D\uDD0A",
+        "martingale": false,
+        "type": "sprint",
+        "parser": {
+            "lines": 1,
+            "pattern": "([a-z]{6})(вверх|вниз)на(\\d+)[\\S\\D]*",
+            "option_index": 1,
+            "prognosis_index": 2,
+            "hours_index": null,
+            "minutes_index": 3
+        }
+    }
+}

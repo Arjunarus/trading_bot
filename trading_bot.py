@@ -1,167 +1,163 @@
-from telethon import TelegramClient, events
 import datetime
-import logging
 import os
+import pytz
 import re
 import sys
 import traceback
-
-from broker_manager_gui import BrokerManagerGui, BrokerManagerInterface
-
-SAVE_STATE_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav')
-
-# Initial values
-step = 1
-init_summ = 50
-logger = logging.getLogger('pyFinance')
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
-def save_state(save_file_path):
-    global step
-    global init_summ
-    with open(save_file_path, 'w') as sav:
-        sav.write("{} {}".format(step, init_summ))
-
-    logger.debug("Saved to {}".format(save_file_path))
-
-
-def load_state(save_file_path):
-    global step
-    global init_summ
-
-    if not os.path.isfile(save_file_path):
-        logger.error("Save state {} is not exists".format(save_file_path))
-        return
-
-    with open(save_file_path, 'r') as sav:
-        content = sav.read()
-    step, init_summ = map(int, content.split())
-
-    logger.debug("Loaded from {}".format(save_file_path))
-    logger.debug('step = {}'.format(step))
-    logger.debug('init_summ = {}'.format(init_summ))
-
-
-def get_summ(st):
-    return int(init_summ * (2.2 ** (st - 1)))
-
-
-def parse_signal(signal_text):
+def parse_signal(signal_text, parser):
     signal_lines = signal_text.split('\n')
-    if len(signal_lines) < 2:
-        # Ожидаем как минимум 2 строки, иначе это не сигнал
-        return None
-
-    option = signal_lines[0][:6]
-    if option not in BrokerManagerInterface.OPTION_LIST:
-        # Если не нашли известный нам опцион, значит это не сигнал
-        return None
-    
-    pattern = r'(вверх|вниз)до(\d{2}.\d{2})мск'
-    m = re.match(pattern, signal_lines[1].replace(' ', '').lower())
-    if m is None:
-        # Если вторая строка не соответствует шаблону, значит это не сигнал
+    # Check lines count
+    if len(signal_lines) < int(parser['lines']):
         return
 
-    prognosis = m.group(1)
-    deal_time_str = m.group(2)
-    deal_time = datetime.datetime.strptime(deal_time_str, '%H.%M').time()
-    return option, prognosis, deal_time
+    m = re.match(parser['pattern'], signal_text.replace(' ', '').lower())
+    # Check if pattern matching
+    if m is None:
+        return
+
+    option = m.group(parser['option_index']).upper()
+    prognosis = m.group(parser['prognosis_index'])
+    hours_idx = parser['hours_index']
+    deal_hour = 0
+    if hours_idx is not None:
+        deal_hour = int(m.group(hours_idx))
+    deal_minutes = int(m.group(parser['minutes_index']))
+    signal_time = datetime.time(hour=deal_hour, minute=deal_minutes)
+    return option, prognosis, signal_time
 
 
-def deal_result_process(result):
-    global step
+def get_finish_time(signal_time, signal_type):
+    if signal_type == 'classic':
+        # Классические сигналы для мск пояса
+        msk_tz = pytz.timezone('Europe/Moscow')
+        now_date = datetime.datetime.now(msk_tz)
+        finish_time = msk_tz.localize(
+            datetime.datetime(
+                now_date.year,
+                now_date.month,
+                now_date.day,
+                signal_time.hour,
+                signal_time.minute
+            )
+        )
+        if now_date > finish_time:
+            finish_time += datetime.timedelta(days=1)
+        finish_time = finish_time.astimezone()
 
-    logger.info('Got result: %s', result)
-    if result == 'LOSE':
-        step += 1
-    elif result == 'WIN':
-        step = 1
+    elif signal_type == 'sprint':
+        finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minute)
+
     else:
-        logger.error('Unknown result: {}'.format(result))
+        raise ValueError('Unknown signal type: {}'.format(signal_type))
 
-    save_state(SAVE_STATE_FILE_PATH)
+    return finish_time
 
 
-def message_process(message_text, message_date, broker_manager):
-    global step
+def get_summ(init_sum, step):
+    return int(init_sum * (2.2 ** (step - 1)))
 
-    logger.info('')
-    logger.info('Got message')
-    logger.debug(message_text)
-    logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
-    try:
-        signal = parse_signal(message_text)
-        if signal is None:
-            logger.info('Message is not a signal, skip.')
+class TradingBot:
+    def __init__(
+            self,
+            init_summ,
+            step,
+            signal_bot_descriptor,
+            broker_manager,
+            logger,
+            save_state_file_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'session.sav'),
+    ):
+        self.init_summ = init_summ
+        self.step = step
+        self.signal_bot_descriptor = signal_bot_descriptor
+        self.broker_manager = broker_manager
+        self.logger = logger
+        self.save_state_file_path = save_state_file_path
+        self.is_deal = False
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.start()
+
+    def save_state(self):
+        with open(self.save_state_file_path, 'w') as sav:
+            sav.write("{} {}".format(self.step, self.init_summ))
+
+        self.logger.debug("Saved to {}".format(self.save_state_file_path))
+
+    def load_state(self):
+        if not os.path.isfile(self.save_state_file_path):
+            self.logger.error("Saved state {} is not exists".format(self.save_state_file_path))
             return
 
-        option, prognosis, deal_time = signal
+        with open(self.save_state_file_path, 'r') as sav:
+            content = sav.read()
+        self.step, self.init_summ = (int(x) for x in content.split())
 
-        logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
-            opt=option,
-            prog=prognosis,
-            tm=deal_time.strftime('%H.%M')
-        ))
+        self.logger.debug("Loaded from {}".format(self.save_state_file_path))
+        self.logger.debug('step = {}'.format(self.step))
+        self.logger.debug('init_summ = {}'.format(self.init_summ))
 
-        summ = get_summ(step)
-        logger.info('Сумма: {}'.format(summ))
+    def start_deal(self, option, prognosis, finish_time):
+        summ = get_summ(self.init_summ, self.step)
+        self.logger.info('Сумма: {}'.format(summ))
+        self.logger.info('Колено: {}'.format(self.step))
+        real_finish_time = self.broker_manager.make_deal(option, prognosis, summ, finish_time)
+        
+        # Set up timer on finish job
+        self.scheduler.add_job(self.finish_deal, 'date', run_date=real_finish_time)
+        self.is_deal = True
 
-        broker_manager.make_deal(option, prognosis, summ, deal_time)
+    def finish_deal(self):
+        self.is_deal = False
 
-    except Exception as err:
-        logger.error("Ошибка: {}\n".format(err))
-        traceback.print_exc(file=sys.stdout)
+        if not self.signal_bot_descriptor['martingale']:
+            # Если нет мартингейла то ничего не надо делать
+            return
 
+        result = self.broker_manager.get_deal_result()
 
-def setup_logging():
-    # Setup main logger
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d.log'), 'a', 'utf-8')
-    formatter = logging.Formatter('%(asctime)s %(message)s')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+        self.logger.info('Got result: %s', result)
+        if result == 'LOSE':
+            self.step += 1
+        elif result == 'WIN':
+            self.step = 1
+        else:
+            self.logger.error('Unknown result: {}'.format(result))
 
-    ch = logging.StreamHandler()
-    ch.setFormatter(formatter)
-    ch.setLevel(logging.INFO)
-    logger.addHandler(ch)
+        self.save_state()
 
-    # Setup telethon logger
-    telethon_logger = logging.getLogger('telethon')
-    tfh = logging.FileHandler(datetime.datetime.now().strftime('%Y-%m-%d_telethon.log'))
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    tfh.setFormatter(formatter)
-    telethon_logger.setLevel(logging.DEBUG)
-    telethon_logger.addHandler(tfh)
+    def message_process(self, message_text, message_date):
+        self.logger.info('-------------------------------------------------------------------')
+        self.logger.info('Got message')
+        self.logger.debug(message_text)
+        self.logger.info(message_date.strftime('Message date: %d-%m-%Y %H:%M'))
 
+        try:
+            signal = parse_signal(message_text, self.signal_bot_descriptor['parser'])
+            if signal is None:
+                self.logger.info('Message is not a signal, skip.\n')
+                return
 
-def main():
-    setup_logging()
+            option, prognosis, signal_time = signal
+            finish_time = get_finish_time(signal_time, self.signal_bot_descriptor['type'])
+            self.logger.info('Получен сигнал: {opt} {prog} до {tm}'.format(
+                opt=option,
+                prog=prognosis,
+                tm=finish_time.strftime('%H.%M')
+            ))
 
-    # Proper number, api_id and api_hash from command line
-    number, api_id, api_hash, *rest = sys.argv[1:]
-    if len(rest) > 0:
-        config = rest[0]
-    else:
-        # Default value
-        config = 'broker_manager_gui_nick_config.json'
+            if option not in self.broker_manager.OPTION_LIST:
+                self.logger.info('Unknown option {}, skip.\n'.format(option))
+                return
 
-    client = TelegramClient(number, api_id, api_hash)
-    broker_manager = BrokerManagerGui(deal_result_process, config)
+            if self.is_deal:
+                self.logger.info('Deal is not finished yet, skip new signal.\n')
+                return
 
-    @client.on(events.NewMessage(chats='Scrooge Club'))  # создает событие, срабатывающее при появлении нового сообщения
-    async def normal_handler(event):
-        message = event.message.to_dict()
-        message_process(message['message'], message['date'], broker_manager)
+            self.start_deal(option, prognosis, finish_time)
 
-    load_state(SAVE_STATE_FILE_PATH)
-    client.start()
-    logger.info('Клиент запущен, бот активен.')
-    client.run_until_disconnected()
-
-
-if __name__ == '__main__':
-    main()
+        except Exception as err:
+            self.logger.error("Ошибка: {}\n".format(err))
+            traceback.print_exc(file=sys.stdout)

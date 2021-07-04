@@ -1,18 +1,38 @@
 import datetime
+import logging
 import os
+import pytz
 import unittest
 
 import trading_bot
+import broker_manager.broker_manager_interface as bm_interface
+
+
+class BrokerManagerStub(bm_interface.BrokerManagerInterface):
+    def get_deal_result(self):
+        return 'WIN'
+
+    def make_deal(self, option, prognosis, summ, deal_time):
+        return
 
 
 class TradingBotTest(unittest.TestCase):
     def setUp(self):
-        trading_bot.step = 1
-        trading_bot.init_summ = 50
-        trading_bot.SAVE_STATE_FILE_PATH = os.devnull
+        self.descriptor_1 = {
+            "name": "Scrooge Club",
+            "martingale": True,
+            "type": "classic",
+            "parser": {
+                "lines": 2,
+                "pattern": "([a-z]{6})\n(вверх|вниз)до(\\d{2}).(\\d{2})мск",
+                "option_index": 1,
+                "prognosis_index": 2,
+                "hours_index": 3,
+                "minutes_index": 4
+            }
+        }
 
     def test_get_summ(self):
-        trading_bot.init_summ = 50
         # step: summ
         test_data_50 = {
             1: 50,
@@ -26,10 +46,9 @@ class TradingBotTest(unittest.TestCase):
         }
 
         for step, summ in test_data_50.items():
-            real_summ = trading_bot.get_summ(step)
+            real_summ = trading_bot.get_summ(50, step)
             self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
-        trading_bot.init_summ = 300
         # step: summ
         test_data_300 = {
             1: 300,
@@ -43,41 +62,93 @@ class TradingBotTest(unittest.TestCase):
         }
 
         for step, summ in test_data_300.items():
-            real_summ = trading_bot.get_summ(step)
+            real_summ = trading_bot.get_summ(300, step)
             self.assertEqual(real_summ, summ, msg='Incorrect summ calculation for {} step!'.format(step))
 
-    def test_deal_result_process(self):
-        init_step = trading_bot.step
-        trading_bot.deal_result_process('LOSE')
-        self.assertEqual(trading_bot.step, init_step + 1, msg='LOSE result do not increment the step.')
+    def test_start_finish_deal(self):
+        logger = logging.getLogger('pyFinance')
+        tbot = trading_bot.TradingBot(
+            init_summ=50,
+            step=1,
+            signal_bot_descriptor=self.descriptor_1,
+            broker_manager=BrokerManagerStub(),
+            logger=logger,
+            save_state_file_path=os.devnull
+        )
 
-        trading_bot.step = 10
-        trading_bot.deal_result_process('WIN')
-        self.assertEqual(trading_bot.step, 1, msg='WIN result should reset step to 1.')
+        self.assertFalse(tbot.is_deal)
+        tbot.start_deal(None, None, None)
+        self.assertTrue(tbot.is_deal)
 
-    def test_parse_signal_invalid(self):
-        self.assertIsNone(trading_bot.parse_signal('blablabla'))
-        self.assertIsNone(trading_bot.parse_signal('EURUSD\nВверх  17.30 мск \n\n'))
-        self.assertIsNone(trading_bot.parse_signal('EURUSD Вверх до 17.30 мск'))
-        self.assertIsNone(trading_bot.parse_signal('BLABLA\nВверх до 17.30 мск'))
-        self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб'))
+        tbot.finish_deal()
+        self.assertFalse(tbot.is_deal)
 
-        # test GBPUSD is absent
-        self.assertIsNone(trading_bot.parse_signal('GBPUSD\nВверх до 17.30 мск'))
+    def test_parse_invalid_signal(self):
+        self.assertIsNone(trading_bot.parse_signal('blablabla', self.descriptor_1['parser']))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD\nВверх  17.30 мск \n\n', self.descriptor_1['parser']))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD Вверх до 17.30 мск', self.descriptor_1['parser']))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD\n\nВверх до 17.30 мск', self.descriptor_1['parser']))
+        self.assertIsNone(trading_bot.parse_signal('EURUSD+45 000 руб\nAUDUSD+42 700 руб', self.descriptor_1['parser']))
 
     def test_parse_signal(self):
-        signal = trading_bot.parse_signal('EURUSD\nВверх до 17.30 мск \n\n')
+        signal = trading_bot.parse_signal('\n'.join([
+            'EURUSD',
+            'Вверх до 17.30 мск ',
+            ''
+        ]), self.descriptor_1['parser'])
         r_signal = ('EURUSD', 'вверх', datetime.time(hour=17, minute=30))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('EURUSD\nВниз до 18.00 мск')
+        signal = trading_bot.parse_signal('\n'.join([
+            'EURUSD',
+            'Вниз до 18.00 мск',
+        ]), self.descriptor_1['parser'])
         r_signal = ('EURUSD', 'вниз', datetime.time(hour=18, minute=00))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('USDJPY\nвВеРх ДО23.50 мск')
+        signal = trading_bot.parse_signal('\n'.join([
+            'USDJPY',
+            'вВеРх ДО23.50 мск'
+        ]), self.descriptor_1['parser'])
         r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
 
-        signal = trading_bot.parse_signal('USDJPY\nвВеРхДО23.50МСК')
-        r_signal = ('USDJPY', 'вверх', datetime.time(hour=23, minute=50))
+        signal = trading_bot.parse_signal('\n'.join([
+            'BLABLA',
+            'вВеРхДО23.50МСК'
+        ]), self.descriptor_1['parser'])
+        r_signal = ('BLABLA', 'вверх', datetime.time(hour=23, minute=50))
         self.assertTupleEqual(signal, r_signal)
+
+    def test_get_finish_time(self):
+
+        signal_time = datetime.time(hour=0, minute=27)
+
+        finish_time = trading_bot.get_finish_time(signal_time, 'classic')
+        msk_tz = pytz.timezone('Europe/Moscow')
+        finish_time_msk = finish_time.astimezone(msk_tz)
+
+        now = datetime.datetime.now(msk_tz)
+        next_day = (now + datetime.timedelta(days=1)).day
+
+        self.assertTrue(finish_time_msk.day in [now.day, next_day])
+        self.assertEqual(finish_time_msk.hour, 0)
+        self.assertEqual(finish_time_msk.minute, 27)
+
+        signal_time = datetime.time(hour=0, minute=27)
+        finish_time = trading_bot.get_finish_time(signal_time, 'sprint')
+        r_time = datetime.datetime.now() + datetime.timedelta(minutes=27)
+        self.assertTupleEqual(
+            (finish_time.year, finish_time.month, finish_time.day, finish_time.hour, finish_time.minute),
+            (r_time.year, r_time.month, r_time.day, r_time.hour, r_time.minute)
+        )
+
+        signal_time = datetime.time(hour=1, minute=2)
+        finish_time = trading_bot.get_finish_time(signal_time, 'sprint')
+        r_time = datetime.datetime.now() + datetime.timedelta(hours=1, minutes=2)
+        self.assertTupleEqual(
+            (finish_time.year, finish_time.month, finish_time.day, finish_time.hour, finish_time.minute),
+            (r_time.year, r_time.month, r_time.day, r_time.hour, r_time.minute)
+        )
+
+

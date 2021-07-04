@@ -1,24 +1,10 @@
 {
     "buttons":
     {
-        "expiration_time": {
-            "first_hour": {
-                "x": 585,
-                "y": 219
-            },
-            "first_minute": {
-                "x": 831,
-                "y": 219
-            },
-            "delta": {
-                "x": 39,
-                "y": 27
-            }
-        },
         "option": {
             "first": {
                 "x": 164,
-                "y": 146
+                "y": 159
             },
             "delta": {
                 "x": 54,
@@ -28,27 +14,38 @@
         "prognosis": {
             "call": {
                 "x": 824,
-                "y": 351
+                "y": 363
             },
             "put": {
                 "x": 944,
-                "y": 351
+                "y": 363
             }
+        },
+        "opened": {
+            "x": 866,
+            "y": 412
         }
     },
 
     "fields": {
         "investment_money": {
             "x": 851,
-            "y": 156
+            "y": 168
         },
         "expiration_time": {
             "x": 911,
-            "y": 156
+            "y": 168
         },
         "result": {
-            "x": 983,
-            "y": 457
+            "x": 987,
+            "y": 463
+        }
+    },
+
+    "context_menu": {
+        "copy": {
+            "x": 52,
+            "y": 91
         }
     }
 }
