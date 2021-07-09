@@ -45,7 +45,7 @@ def get_finish_time(signal_time, signal_type):
         )
         if now_date > finish_time:
             finish_time += datetime.timedelta(days=1)
-        finish_time = finish_time.astimezone()
+        finish_time = finish_time.astimezone().replace(tzinfo=None)
 
     elif signal_type == 'sprint':
         finish_time = datetime.datetime.now() + datetime.timedelta(hours=signal_time.hour, minutes=signal_time.minute)
